@@ -1,0 +1,84 @@
+
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Cyber Skater Clicker</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            background-image: url('https://api.remix.ai/v1/images/ae19560f-7f72-47e0-9993-490352b21703.png'); /* Ссылка на твоего персонажа */
+            background-size: cover; background-position: center;
+            font-family: 'Courier New', Courier, monospace; /* Геймерский стиль */
+            overflow: hidden; color: white; text-align: center;
+        }
+        #game-container {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: space-between; height: 100vh;
+            background: rgba(0, 0, 0, 0.6); /* Затемнение фона для читаемости */
+        }
+        #header { margin-top: 20px; }
+        #score { font-size: 48px; font-weight: bold; color: #00ffff; text-shadow: 0 0 10px #00ffff; }
+        #level { font-size: 18px; color: #ff00ff; }
+        
+        #click-area {
+            width: 200px; height: 200px;
+            background-image: url('https://api.remix.ai/v1/images/can.png'); /* Парящая банка (сгенерирую позже) */
+            background-size: contain; background-repeat: no-repeat;
+            cursor: pointer; transition: transform 0.1s;
+        }
+        #click-area:active { transform: scale(0.9); } /* Эффект нажатия */
+
+        #ad-button {
+            background-color: #ff00ff; color: white; border: none;
+            padding: 15px 30px; font-size: 18px; border-radius: 25px;
+            cursor: pointer; margin-bottom: 30px;
+            box-shadow: 0 0 15px #ff00ff;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="header">
+            <div id="score">0</div>
+            <div id="level">NEON ROOKIE (Ур. 1)</div>
+        </div>
+        
+        <div id="click-area" onclick="clickCan()"></div>
+
+        <button id="ad-button" onclick="showAd()">X2 ЭНЕРГИЯ ЗА РЕКЛАМУ</button>
+    </div>
+
+    <script>
+        let score = 0;
+        let level = 1;
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Расширить приложение на весь экран
+
+        function clickCan() {
+            score++;
+            document.getElementById('score').innerText = score;
+            checkLevel();
+        }
+
+        function checkLevel() {
+            if (score > 100 && level === 1) {
+                level = 2;
+                document.getElementById('level').innerText = "CYBER RIDER (Ур. 2)";
+                tg.HapticFeedback.notificationOccurred('success'); // Вибрация при повышении уровня
+            }
+            // Добавь свои уровни здесь...
+        }
+
+        // --- ЛОГИКА ЗАРАБОТКА ---
+        function showAd() {
+            // Здесь мы подключим AdsGram.ai
+            alert("Здесь будет показана реклама через AdsGram. Ты получишь $$$ за каждый просмотр.");
+            tg.showPopup({ message: 'Спасибо за просмотр! Энергия удвоена на 5 минут.' });
+        }
+    </script>
+</body>
+</html>
