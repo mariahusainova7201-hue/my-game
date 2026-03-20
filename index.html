@@ -3,38 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Cyber Skater Clicker</title>
+    <title>Cyber Forest Clicker</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             margin: 0; padding: 0;
-            background-image: url('https://api.remix.ai/v1/images/ae19560f-7f72-47e0-9993-490352b21703.png'); /* Ссылка на твоего персонажа */
+            /* Твой волшебный лес на фоне */
+            background-image: url('https://files.oaiusercontent.com/file-77e1cb0b-8d47-4c61-8df6-8311a0fe21e5'); 
             background-size: cover; background-position: center;
-            font-family: 'Courier New', Courier, monospace; /* Геймерский стиль */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden; color: white; text-align: center;
         }
         #game-container {
             display: flex; flex-direction: column; align-items: center;
             justify-content: space-between; height: 100vh;
-            background: rgba(0, 0, 0, 0.6); /* Затемнение фона для читаемости */
+            background: rgba(0, 0, 0, 0.4); /* Легкое затемнение, чтобы видеть текст */
         }
-        #header { margin-top: 20px; }
-        #score { font-size: 48px; font-weight: bold; color: #00ffff; text-shadow: 0 0 10px #00ffff; }
-        #level { font-size: 18px; color: #ff00ff; }
+        #header { margin-top: 30px; }
+        #score { font-size: 60px; font-weight: bold; color: #fff; text-shadow: 0 0 20px #00ffcc; }
+        #level { font-size: 20px; color: #ccff00; text-transform: uppercase; letter-spacing: 2px; }
         
+        /* Кнопка-клик (Кристалл или монета) */
         #click-area {
-            width: 200px; height: 200px;
-            background-image: url('https://api.remix.ai/v1/images/can.png'); /* Парящая банка (сгенерирую позже) */
-            background-size: contain; background-repeat: no-repeat;
-            cursor: pointer; transition: transform 0.1s;
+            width: 220px; height: 220px;
+            background: radial-gradient(circle, #ff00ff 0%, #7700ff 100%);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 80px; box-shadow: 0 0 50px rgba(119, 0, 255, 0.8);
+            cursor: pointer; transition: transform 0.05s;
+            user-select: none;
         }
-        #click-area:active { transform: scale(0.9); } /* Эффект нажатия */
+        #click-area:active { transform: scale(0.92); }
 
-        #ad-button {
-            background-color: #ff00ff; color: white; border: none;
-            padding: 15px 30px; font-size: 18px; border-radius: 25px;
-            cursor: pointer; margin-bottom: 30px;
-            box-shadow: 0 0 15px #ff00ff;
+        /* Магазин */
+        #shop-container {
+            width: 90%; background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px); border-radius: 20px;
+            padding: 15px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        .shop-btn {
+            background: #00ffcc; color: #000; border: none;
+            padding: 10px 15px; margin: 5px; border-radius: 10px;
+            font-weight: bold; cursor: pointer; font-size: 14px;
+        }
+        .shop-btn:disabled { background: #555; color: #ccc; }
+
+        /* Вылетающие цифры */
+        .floating-text {
+            position: absolute; color: #00ffcc; font-weight: bold;
+            pointer-events: none; animation: floatUp 0.8s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
         }
     </style>
 </head>
@@ -42,40 +63,78 @@
     <div id="game-container">
         <div id="header">
             <div id="score">0</div>
-            <div id="level">NEON ROOKIE (Ур. 1)</div>
+            <div id="level">ЛЕСНОЙ НОВИЧОК (Ур. 1)</div>
         </div>
         
-        <div id="click-area" onclick="clickCan()"></div>
+        <div id="click-area" onclick="clickAction(event)">💎</div>
 
-        <button id="ad-button" onclick="showAd()">X2 ЭНЕРГИЯ ЗА РЕКЛАМУ</button>
+        <div id="shop-container">
+            <p style="margin: 0 0 10px 0;">МАГАЗИН УЛУЧШЕНИЙ</p>
+            <button id="upg-click" class="shop-btn" onclick="buyUpgrade('click')">Сила клика +5 (Цена: 50)</button>
+            <button id="upg-auto" class="shop-btn" onclick="buyUpgrade('auto')">Авто-сбор (Цена: 100)</button>
+        </div>
     </div>
 
     <script>
         let score = 0;
         let level = 1;
+        let clickPower = 1;
+        let autoClickActive = false;
+        
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Расширить приложение на весь экран
+        tg.expand();
 
-        function clickCan() {
-            score++;
-            document.getElementById('score').innerText = score;
+        function clickAction(e) {
+            score += clickPower;
+            updateUI();
+            createFloatingText(e.clientX, e.clientY, "+" + clickPower);
+            tg.HapticFeedback.impactOccurred('medium');
             checkLevel();
         }
 
-        function checkLevel() {
-            if (score > 100 && level === 1) {
-                level = 2;
-                document.getElementById('level').innerText = "CYBER RIDER (Ур. 2)";
-                tg.HapticFeedback.notificationOccurred('success'); // Вибрация при повышении уровня
-            }
-            // Добавь свои уровни здесь...
+        function createFloatingText(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.innerText = text;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
         }
 
-        // --- ЛОГИКА ЗАРАБОТКА ---
-        function showAd() {
-            // Здесь мы подключим AdsGram.ai
-            alert("Здесь будет показана реклама через AdsGram. Ты получишь $$$ за каждый просмотр.");
-            tg.showPopup({ message: 'Спасибо за просмотр! Энергия удвоена на 5 минут.' });
+        function buyUpgrade(type) {
+            if (type === 'click' && score >= 50) {
+                score -= 50;
+                clickPower += 5;
+                document.getElementById('upg-click').disabled = true;
+                document.getElementById('upg-click').innerText = "КЛИК ПРОКАЧАН!";
+            } else if (type === 'auto' && score >= 100) {
+                score -= 100;
+                autoClickActive = true;
+                document.getElementById('upg-auto').disabled = true;
+                document.getElementById('upg-auto').innerText = "АВТО-СБОР ВКЛЮЧЕН";
+                startAutoClick();
+            }
+            updateUI();
+        }
+
+        function startAutoClick() {
+            setInterval(() => {
+                score += 2;
+                updateUI();
+            }, 3000); // Каждые 3 секунды +2 монеты
+        }
+
+        function updateUI() {
+            document.getElementById('score').innerText = score;
+        }
+
+        function checkLevel() {
+            if (score >= 500 && level === 1) {
+                level = 2;
+                document.getElementById('level').innerText = "МАСТЕР КРИСТАЛЛОВ (Ур. 2)";
+                tg.HapticFeedback.notificationOccurred('success');
+            }
         }
     </script>
 </body>
