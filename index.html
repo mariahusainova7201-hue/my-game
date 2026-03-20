@@ -3,138 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Cyber Forest Clicker</title>
+    <title>Cyber Forest Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             margin: 0; padding: 0;
-            /* Твой волшебный лес на фоне */
             background-image: url('https://files.oaiusercontent.com/file-77e1cb0b-8d47-4c61-8df6-8311a0fe21e5'); 
             background-size: cover; background-position: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden; color: white; text-align: center;
+            font-family: 'Segoe UI', sans-serif; overflow: hidden; color: white; text-align: center;
         }
         #game-container {
             display: flex; flex-direction: column; align-items: center;
             justify-content: space-between; height: 100vh;
-            background: rgba(0, 0, 0, 0.4); /* Легкое затемнение, чтобы видеть текст */
+            background: rgba(0, 0, 0, 0.3);
         }
-        #header { margin-top: 30px; }
-        #score { font-size: 60px; font-weight: bold; color: #fff; text-shadow: 0 0 20px #00ffcc; }
-        #level { font-size: 20px; color: #ccff00; text-transform: uppercase; letter-spacing: 2px; }
+        #score-box { margin-top: 50px; }
+        #score { font-size: 60px; font-weight: 900; text-shadow: 0 0 20px #00ffcc; }
+        #power-text { font-size: 14px; color: #00ffcc; opacity: 0.8; }
         
-        /* Кнопка-клик (Кристалл или монета) */
         #click-area {
-            width: 220px; height: 220px;
-            background: radial-gradient(circle, #ff00ff 0%, #7700ff 100%);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 80px; box-shadow: 0 0 50px rgba(119, 0, 255, 0.8);
+            width: 210px; height: 210px;
+            background: radial-gradient(circle, #ff00ff, #7700ff);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 90px;
+            box-shadow: 0 0 50px rgba(119, 0, 255, 0.7);
             cursor: pointer; transition: transform 0.05s;
-            user-select: none;
+            user-select: none; position: relative;
         }
         #click-area:active { transform: scale(0.92); }
 
-        /* Магазин */
-        #shop-container {
-            width: 90%; background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px); border-radius: 20px;
-            padding: 15px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.2);
-        }
-        .shop-btn {
-            background: #00ffcc; color: #000; border: none;
-            padding: 10px 15px; margin: 5px; border-radius: 10px;
-            font-weight: bold; cursor: pointer; font-size: 14px;
-        }
-        .shop-btn:disabled { background: #555; color: #ccc; }
-
-        /* Вылетающие цифры */
-        .floating-text {
+        /* Анимация вылетающих монет */
+        .coin-fly {
             position: absolute; color: #00ffcc; font-weight: bold;
-            pointer-events: none; animation: floatUp 0.8s ease-out forwards;
+            font-size: 24px; pointer-events: none;
+            animation: moveUp 0.6s ease-out forwards;
         }
-        @keyframes floatUp {
+        @keyframes moveUp {
             0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-100px); opacity: 0; }
+            100% { transform: translateY(-120px); opacity: 0; }
         }
+
+        #shop {
+            width: 90%; background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px); border-radius: 25px;
+            padding: 20px; margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn {
+            background: linear-gradient(90deg, #00ffcc, #00ccff);
+            color: black; border: none; padding: 12px; margin: 6px 0;
+            border-radius: 12px; font-weight: bold; width: 100%;
+            box-shadow: 0 4px 10px rgba(0, 255, 204, 0.3);
+        }
+        .btn:disabled { background: #444; color: #888; box-shadow: none; }
     </style>
 </head>
 <body>
     <div id="game-container">
-        <div id="header">
+        <div id="score-box">
             <div id="score">0</div>
-            <div id="level">ЛЕСНОЙ НОВИЧОК (Ур. 1)</div>
+            <div id="power-text">КЛИК: +<span id="p-val">1</span></div>
         </div>
         
-        <div id="click-area" onclick="clickAction(event)">💎</div>
+        <div id="click-area" onclick="handleTouch(event)">💎</div>
 
-        <div id="shop-container">
-            <p style="margin: 0 0 10px 0;">МАГАЗИН УЛУЧШЕНИЙ</p>
-            <button id="upg-click" class="shop-btn" onclick="buyUpgrade('click')">Сила клика +5 (Цена: 50)</button>
-            <button id="upg-auto" class="shop-btn" onclick="buyUpgrade('auto')">Авто-сбор (Цена: 100)</button>
+        <div id="shop">
+            <p style="margin-top: 0; font-size: 14px; letter-spacing: 1px;">МАГАЗИН УЛУЧШЕНИЙ</p>
+            <button id="up1" class="btn" onclick="buy(1)">⚡ СИЛА КЛИКА +5 (Цена: 50)</button>
+            <button id="up2" class="btn" onclick="buy(2)">🤖 АВТО-КЛИКЕР (Цена: 150)</button>
         </div>
     </div>
 
     <script>
-        let score = 0;
-        let level = 1;
-        let clickPower = 1;
-        let autoClickActive = false;
-        
+        let coins = 0;
+        let power = 1;
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        function clickAction(e) {
-            score += clickPower;
-            updateUI();
-            createFloatingText(e.clientX, e.clientY, "+" + clickPower);
-            tg.HapticFeedback.impactOccurred('medium');
-            checkLevel();
+        function handleTouch(e) {
+            coins += power;
+            render();
+            
+            // Создаем вылетающий текст
+            const fly = document.createElement('div');
+            fly.className = 'coin-fly';
+            fly.innerText = '+' + power;
+            fly.style.left = (Math.random() * 60 + 70) + 'px';
+            document.getElementById('click-area').appendChild(fly);
+            setTimeout(() => fly.remove(), 600);
+
+            tg.HapticFeedback.impactOccurred('light');
         }
 
-        function createFloatingText(x, y, text) {
-            const el = document.createElement('div');
-            el.className = 'floating-text';
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            el.innerText = text;
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 800);
-        }
-
-        function buyUpgrade(type) {
-            if (type === 'click' && score >= 50) {
-                score -= 50;
-                clickPower += 5;
-                document.getElementById('upg-click').disabled = true;
-                document.getElementById('upg-click').innerText = "КЛИК ПРОКАЧАН!";
-            } else if (type === 'auto' && score >= 100) {
-                score -= 100;
-                autoClickActive = true;
-                document.getElementById('upg-auto').disabled = true;
-                document.getElementById('upg-auto').innerText = "АВТО-СБОР ВКЛЮЧЕН";
-                startAutoClick();
+        function buy(type) {
+            if (type === 1 && coins >= 50) {
+                coins -= 50; power += 5;
+                document.getElementById('up1').disabled = true;
+                document.getElementById('up1').innerText = "⚡ КЛИК УЛУЧШЕН";
+            } else if (type === 2 && coins >= 150) {
+                coins -= 150;
+                document.getElementById('up2').disabled = true;
+                document.getElementById('up2').innerText = "🤖 РОБОТ РАБОТАЕТ";
+                setInterval(() => { coins += 2; render(); }, 1000); // +2 монеты каждую секунду
             }
-            updateUI();
+            render();
+            tg.HapticFeedback.notificationOccurred('success');
         }
 
-        function startAutoClick() {
-            setInterval(() => {
-                score += 2;
-                updateUI();
-            }, 3000); // Каждые 3 секунды +2 монеты
-        }
-
-        function updateUI() {
-            document.getElementById('score').innerText = score;
-        }
-
-        function checkLevel() {
-            if (score >= 500 && level === 1) {
-                level = 2;
-                document.getElementById('level').innerText = "МАСТЕР КРИСТАЛЛОВ (Ур. 2)";
-                tg.HapticFeedback.notificationOccurred('success');
-            }
+        function render() {
+            document.getElementById('score').innerText = coins;
+            document.getElementById('p-val').innerText = power;
         }
     </script>
 </body>
