@@ -159,17 +159,23 @@
         const AdController = window.AdsGram.init({ blockId: "25802" });
 
         function showAd() {
-            AdController.show().then(() => {
-                coins += 50; 
-                tg.showAlert("Поздравляем! Вы получили 50 монет!");
-                updateUI();
-            }).catch(() => {
-                tg.showAlert("Реклама пока не доступна.");
-            });
-        }
-        
-        // Первое обновление при запуске
+    // Проверка: загрузился ли скрипт AdsGram
+    if (!window.AdsGram) {
+        tg.showAlert("Скрипт рекламы еще не загрузился. Подождите 5 секунд.");
+        return;
+    }
+
+    // Инициализируем контроллер прямо внутри функции
+    const AdController = window.AdsGram.init({ blockId: "25802" });
+
+    AdController.show().then((result) => {
+        // Если всё успешно
+        coins += 50;
         updateUI();
-    </script>
-</body>
-</html>
+        tg.showAlert("Ура! +50 монет зачислено!");
+    }).catch((result) => {
+        // Если реклама не загрузилась или пользователь закрыл её раньше
+        console.error(result);
+        tg.showAlert("Реклама пока не готова. Попробуйте чуть позже!");
+    });
+}
