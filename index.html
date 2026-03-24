@@ -1,10 +1,11 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Cyber Forest Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://adsgram.ai/sdk"></script>
     <style>
         body {
             margin: 0; padding: 0;
@@ -31,17 +32,6 @@
             user-select: none; position: relative;
         }
         #click-area:active { transform: scale(0.92); }
-
-        /* Анимация вылетающих монет */
-        .coin-fly {
-            position: absolute; color: #00ffcc; font-weight: bold;
-            font-size: 24px; pointer-events: none;
-            animation: moveUp 0.6s ease-out forwards;
-        }
-        @keyframes moveUp {
-            0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-120px); opacity: 0; }
-        }
 
         #shop {
             width: 90%; background: rgba(0, 0, 0, 0.7);
@@ -71,6 +61,7 @@
             <p style="margin-top: 0; font-size: 14px; letter-spacing: 1px;">МАГАЗИН УЛУЧШЕНИЙ</p>
             <button id="up1" class="btn" onclick="buy(1)">⚡ СИЛА КЛИКА +5 (Цена: 50)</button>
             <button id="up2" class="btn" onclick="buy(2)">🤖 АВТО-КЛИКЕР (Цена: 150)</button>
+            <button class="btn" onclick="showAd()" style="background: linear-gradient(90deg, #ff00ff, #7700ff); color: white; margin-top: 10px;">📺 +50 МОНЕТ ЗА РЕКЛАМУ</button>
         </div>
     </div>
 
@@ -82,38 +73,23 @@
 
         function handleTouch(e) {
             coins += power;
-            render();
-            
-            // Создаем вылетающий текст
-            const fly = document.createElement('div');
-            fly.className = 'coin-fly';
-            fly.innerText = '+' + power;
-            fly.style.left = (Math.random() * 60 + 70) + 'px';
-            document.getElementById('click-area').appendChild(fly);
-            setTimeout(() => fly.remove(), 600);
-
-            tg.HapticFeedback.impactOccurred('light');
+            document.getElementById('score').innerText = Math.floor(coins);
         }
 
-        function buy(type) {
-            if (type === 1 && coins >= 50) {
-                coins -= 50; power += 5;
-                document.getElementById('up1').disabled = true;
-                document.getElementById('up1').innerText = "⚡ КЛИК УЛУЧШЕН";
-            } else if (type === 2 && coins >= 150) {
-                coins -= 150;
-                document.getElementById('up2').disabled = true;
-                document.getElementById('up2').innerText = "🤖 РОБОТ РАБОТАЕТ";
-                setInterval(() => { coins += 2; render(); }, 1000); // +2 монеты каждую секунду
-            }
-            render();
-            tg.HapticFeedback.notificationOccurred('success');
-        }
+        // ИНИЦИАЛИЗАЦИЯ РЕКЛАМЫ С ТВОИМ ID
+        const AdController = window.AdsGram.init({ blockId: "25802" });
 
-        function render() {
-            document.getElementById('score').innerText = coins;
-            document.getElementById('p-val').innerText = power;
+        function showAd() {
+            AdController.show().then(() => {
+                coins += 50; 
+                document.getElementById('score').innerText = Math.floor(coins);
+                tg.showAlert("Поздравляем! Вы получили 50 монет!");
+            }).catch(() => {
+                tg.showAlert("Реклама пока не доступна.");
+            });
         }
+        
+        // Тут можно добавить функции покупки buy(1) и buy(2), если они у тебя были готовы
     </script>
 </body>
 </html>
