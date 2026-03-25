@@ -3,174 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Cyber Runner: Music & Action</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://adsgram.ai/sdk"></script>
+    <title>Cyber Runner Pro</title>
+    <script src="https://sad.adsgram.ai/js/adsgram-ad-sdk.js"></script>
     <style>
-        body { margin: 0; background: #050510; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; overflow: hidden; user-select: none; touch-action: none; }
-        #game-container { display: none; flex-direction: column; height: 100vh; justify-content: space-between; padding: 20px; box-sizing: border-box; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: linear-gradient(to bottom, #000510, #001530); }
         
-        /* КНОПКА ЗВУКА */
-        #music-btn { position: absolute; top: 15px; right: 15px; font-size: 22px; cursor: pointer; z-index: 2000; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        #player { 
+            position: absolute; bottom: 30px; left: 50%; 
+            width: 60px; height: 60px; transform: translateX(-50%);
+            background: #0ff; border-radius: 12px; box-shadow: 0 0 25px #0ff;
+            transition: left 0.05s linear;
+        }
 
-        #score-board { padding: 10px; background: rgba(0,255,204,0.05); border-radius: 15px; border: 1px solid rgba(0,255,204,0.2); }
-        #score { font-size: 38px; font-weight: bold; color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
+        .item { position: absolute; width: 35px; height: 35px; border-radius: 50%; }
+        .crystal { background: #f0f; box-shadow: 0 0 20px #f0f; }
 
-        /* ИГРОВАЯ ЗОНА */
-        #game-area { position: relative; width: 100%; height: 50vh; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,255,204,0.05) 100%); border-radius: 20px; overflow: hidden; border: 1px solid #1a1a2e; margin: 15px 0; }
-        #player { position: absolute; bottom: 20px; left: 50%; font-size: 55px; transform: translateX(-50%); transition: left 0.1s ease-out; z-index: 10; filter: drop-shadow(0 0 10px rgba(0,255,204,0.5)); }
-        .falling-item { position: absolute; font-size: 32px; top: -50px; z-index: 5; }
+        /* Интерфейс */
+        #ui-left { position: absolute; top: 15px; left: 15px; color: #fff; z-index: 10; font-size: 16px; line-height: 1.4; }
+        #ui-right { position: absolute; top: 15px; right: 15px; text-align: right; color: #0f0; z-index: 10; font-size: 16px; }
+        
+        #best-score { color: #ff0; font-weight: bold; font-size: 14px; }
 
-        .bar-bg { width: 100%; height: 6px; background: #222; border-radius: 3px; margin: 5px 0; overflow: hidden; }
-        #energy-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ffcc00, #ff6600); transition: 0.2s; }
-        #evo-fill { width: 0%; height: 100%; background: #00ffcc; transition: 0.5s; }
-
-        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 12px; font-size: 11px; }
-        .ad-btn { grid-column: span 2; background: linear-gradient(90deg, #7700ff, #ff00ff); border: none; font-weight: bold; height: 50px; box-shadow: 0 4px 15px rgba(119,0,255,0.3); }
+        #ad-button { 
+            position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%);
+            padding: 18px 35px; background: #f0f; color: #fff; border: none; 
+            border-radius: 30px; font-size: 18px; font-weight: bold; cursor: pointer; display: none;
+            box-shadow: 0 0 30px #f0f; z-index: 100;
+        }
     </style>
 </head>
 <body>
-    <audio id="bg-music" loop><source src="music.mp3" type="audio/mpeg"></audio>
-    <div id="music-btn" onclick="toggleMusic()">🔇</div>
 
-    <div id="intro-screen" style="position:fixed; inset:0; background:#000; z-index:3000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px;">
-        <h1 style="color:#00ffcc; letter-spacing:3px;">CYBER RUNNER</h1>
-        <p style="color:#aaa; font-size:14px; text-align:center; margin-bottom:30px;">Управляй героем! Лови кристаллы 💎 и избегай вирусов 👾</p>
-        <button class="btn ad-btn" style="width:200px;" onclick="startGame()">НАЧАТЬ</button>
+<div id="game-container">
+    <div id="ui-left">
+        Кристаллы: <span id="score">0</span><br>
+        <span id="best-score">Рекорд: <span id="high-score">0</span></span>
     </div>
-
-    <div id="game-container">
-        <div id="score-board">
-            <div id="score">0</div>
-            <div style="display:flex; justify-content:space-between; font-size:10px; color:#aaa; margin-top:5px;"><span>Энергия</span><span id="en-text">100%</span></div>
-            <div class="bar-bg"><div id="energy-fill"></div></div>
-            <div class="bar-bg"><div id="evo-fill"></div></div>
-        </div>
-
-        <div id="game-area">
-            <div id="player">🏃‍♂️</div>
-        </div>
-
-        <div class="shop-grid">
-            <button id="up1" class="btn" onclick="buy(1)">💎 ЦЕННОСТЬ +1<br><span id="p-price">50</span> 💰</button>
-            <button id="up2" class="btn" onclick="buy(2)">🔋 СТАМИНА +2<br><span id="a-price">200</span> 💰</button>
-            <button class="btn ad-btn" onclick="showAd()">📺 ВОССТАНОВИТЬ ЭНЕРГИЮ (+500 💰)</button>
-        </div>
+    <div id="ui-right">
+        Выживание: <span id="timer">0</span> сек.<br>
+        Скорость: <span id="speed-display">x1</span>
     </div>
+    
+    <div id="player"></div>
+    <button id="ad-button" onclick="showAd()">⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ</button>
+</div>
 
-    <script>
-        let coins = 0; let power = 1; let auto = 0;
-        let pPrice = 50; let aPrice = 200;
-        let energy = 100; let era = 1;
-        let isMusicPlaying = false;
+<script>
+    const player = document.getElementById('player');
+    const scoreElement = document.getElementById('score');
+    const highScoreElement = document.getElementById('high-score');
+    const timerElement = document.getElementById('timer');
+    const speedElement = document.getElementById('speed-display');
+    const adButton = document.getElementById('ad-button');
+    
+    let score = 0;
+    let seconds = 0;
+    let gameActive = true;
+    let currentSpeed = 5;
+    let spawnRate = 1200;
+    
+    // Загружаем рекорд из памяти
+    let savedHighScore = localStorage.getItem('cyberRunnerHighScore') || 0;
+    highScoreElement.innerText = savedHighScore;
 
-        const tg = window.Telegram.WebApp;
-        const gameArea = document.getElementById('game-area');
-        const player = document.getElementById('player');
-        const heroes = ["🏃‍♂️", "🦾", "🤖", "⚡", "👑"];
-        const targets = [1000, 5000, 25000, 100000, 999999];
+    // Управление
+    document.addEventListener('touchmove', (e) => {
+        if (!gameActive) return;
+        let touch = e.touches[0];
+        let x = touch.clientX - 30;
+        if (x < 0) x = 0;
+        if (x > window.innerWidth - 60) x = window.innerWidth - 60;
+        player.style.left = x + 'px';
+    });
 
-        function toggleMusic() {
-            const m = document.getElementById('bg-music');
-            const btn = document.getElementById('music-btn');
-            if (isMusicPlaying) { m.pause(); btn.innerText = "🔇"; }
-            else { m.play().catch(()=>{}); btn.innerText = "🔊"; }
-            isMusicPlaying = !isMusicPlaying;
-        }
+    function createCrystal() {
+        if (!gameActive) return;
+        const crystal = document.createElement('div');
+        crystal.classList.add('item', 'crystal');
+        crystal.style.left = Math.random() * (window.innerWidth - 40) + 'px';
+        crystal.style.top = '-50px';
+        document.getElementById('game-container').appendChild(crystal);
 
-        function startGame() {
-            document.getElementById('intro-screen').style.display = 'none';
-            document.getElementById('game-container').style.display = 'flex';
-            const m = document.getElementById('bg-music');
-            m.play().then(() => { isMusicPlaying = true; document.getElementById('music-btn').innerText = "🔊"; }).catch(()=>{});
-            spawnLoop();
-            updateUI();
-        }
+        let top = -50;
+        function fall() {
+            if (!gameActive) { crystal.remove(); return; }
+            top += currentSpeed;
+            crystal.style.top = top + 'px';
 
-        // Движение пальцем
-        gameArea.addEventListener('touchmove', (e) => {
-            const rect = gameArea.getBoundingClientRect();
-            let x = e.touches[0].clientX - rect.left;
-            let percent = (x / rect.width) * 100;
-            if(percent < 8) percent = 8;
-            if(percent > 92) percent = 92;
-            player.style.left = percent + '%';
-        });
+            let pRect = player.getBoundingClientRect();
+            let cRect = crystal.getBoundingClientRect();
 
-        function spawnItem() {
-            if (energy <= 5) return;
-            const item = document.createElement('div');
-            const isBomb = Math.random() < 0.25;
-            item.className = 'falling-item';
-            item.innerText = isBomb ? '👾' : '💎';
-            item.style.left = (Math.random() * 80 + 10) + '%';
-            gameArea.appendChild(item);
-
-            let pos = -50;
-            let speed = 3 + (era * 0.7);
-            let fallInterval = setInterval(() => {
-                pos += speed;
-                item.style.top = pos + 'px';
-
-                const pRect = player.getBoundingClientRect();
-                const iRect = item.getBoundingClientRect();
-
-                if (iRect.bottom >= pRect.top + 10 && iRect.right >= pRect.left && iRect.left <= pRect.right && iRect.top <= pRect.bottom) {
-                    if (isBomb) {
-                        energy -= 15;
-                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-                    } else {
-                        coins += power;
-                        energy -= 0.3;
-                        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-                    }
-                    clearInterval(fallInterval);
-                    item.remove();
-                    updateUI();
-                }
-
-                if (pos > gameArea.offsetHeight) {
-                    clearInterval(fallInterval);
-                    item.remove();
-                }
-            }, 20);
-        }
-
-        function spawnLoop() {
-            setInterval(spawnItem, 900 - (era * 100));
-        }
-
-        function updateUI() {
-            document.getElementById('score').innerText = Math.floor(coins);
-            document.getElementById('energy-fill').style.width = energy + '%';
-            document.getElementById('en-text').innerText = Math.floor(energy) + '%';
-            document.getElementById('evo-fill').style.width = Math.min((coins/targets[era-1]*100), 100) + '%';
-            document.getElementById('p-price').innerText = Math.floor(pPrice);
-            document.getElementById('a-price').innerText = Math.floor(aPrice);
-            player.innerText = heroes[era-1];
-
-            if (coins >= targets[era-1] && era < 5) {
-                era++; coins = 0; power *= 2;
-                tg.showAlert("ЭВОЛЮЦИЯ! Твой герой стал сильнее!");
+            if (cRect.bottom > pRect.top && cRect.left < pRect.right && cRect.right > pRect.left) {
+                score++;
+                scoreElement.innerText = score;
+                crystal.remove();
+                return;
             }
-            if (energy < 0) energy = 0;
-        }
 
-        setInterval(() => { if(energy < 100) energy += 0.8; updateUI(); }, 1000);
-
-        function buy(t) {
-            if(t===1 && coins>=pPrice){ coins-=pPrice; power+=1; pPrice*=2.8; }
-            if(t===2 && coins>=aPrice){ coins-=aPrice; energy=100; aPrice*=3; }
-            updateUI();
+            if (top > window.innerHeight) {
+                crystal.remove();
+                gameOver();
+            } else {
+                requestAnimationFrame(fall);
+            }
         }
+        fall();
+    }
 
-        function showAd() {
-            if (!window.AdsGram) { tg.showAlert("Загрузка..."); return; }
-            window.AdsGram.init({ blockId: "25872" }).show().then(() => { 
-                coins += 500; energy = 100; updateUI(); 
-            }).catch(() => tg.showAlert("Реклама в проверке."));
+    // Интервал появления предметов
+    let spawnTimer = setInterval(createCrystal, spawnRate);
+
+    // Таймер выживания и Ускорение каждые 10 сек
+    const gameTimer = setInterval(() => {
+        if (gameActive) {
+            seconds++;
+            timerElement.innerText = seconds;
+            
+            if (seconds % 10 === 0) {
+                currentSpeed += 0.8;
+                speedElement.innerText = "x" + (currentSpeed / 5).toFixed(1);
+                
+                // Ускоряем появление
+                clearInterval(spawnTimer);
+                spawnRate = Math.max(400, spawnRate - 100);
+                spawnTimer = setInterval(createCrystal, spawnRate);
+            }
         }
-    </script>
+    }, 1000);
+
+    function gameOver() {
+        gameActive = false;
+        clearInterval(spawnTimer);
+        
+        // Проверяем рекорд
+        if (score > savedHighScore) {
+            localStorage.setItem('cyberRunnerHighScore', score);
+            highScoreElement.innerText = score;
+            alert("НОВЫЙ РЕКОРД! 🏆 Ты собрал " + score + " кристаллов!");
+        } else {
+            alert("ИГРА ОКОНЧЕНА\nКристаллы: " + score + "\nВремя: " + seconds + " сек.");
+        }
+        
+        adButton.style.display = 'block';
+    }
+
+    // ИНИЦИАЛИЗАЦИЯ ADSGRAM (Вставь свой ID ниже!)
+    const AdController = window.AdsGram.init({ blockId: "25872" });
+
+    function showAd() {
+        AdController.show().then(() => {
+            location.reload(); // Перезапуск после рекламы
+        }).catch((err) => {
+            console.log("Ad Error", err);
+            location.reload(); 
+        });
+    }
+</script>
+
 </body>
 </html>  
