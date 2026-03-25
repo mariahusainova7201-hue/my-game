@@ -1,106 +1,195 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Cyber Forest Pro</title>
+    <title>Cyber Evolution: Genesis</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://adsgram.ai/sdk"></script>
     <style>
-        body { margin: 0; padding: 0; background-color: #0e0e1a; background-image: url('https://files.oaiusercontent.com/file-77e1cb0b-8d47-4c61-8df6-8311a0fe21e5'); background-size: cover; background-position: center; font-family: 'Segoe UI', sans-serif; overflow: hidden; color: white; text-align: center; }
-        #game-container { display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 100vh; background: rgba(0, 0, 0, 0.3); }
-        #score-box { margin-top: 50px; }
-        #score { font-size: 60px; font-weight: 900; text-shadow: 0 0 20px #00ffcc; }
-        #click-area { width: 210px; height: 210px; background: radial-gradient(circle, #ff00ff, #7700ff); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 90px; box-shadow: 0 0 50px rgba(119, 0, 255, 0.7); cursor: pointer; transition: transform 0.05s; user-select: none; position: relative; }
-        #click-area:active { transform: scale(0.92); }
-        .coin-particle { position: absolute; color: #FFD700; font-weight: bold; font-size: 30px; pointer-events: none; animation: moveCoin 0.8s ease-out forwards; }
-        @keyframes moveCoin { 0% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -150px) scale(0.5); opacity: 0; } }
-        #shop { width: 90%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); border-radius: 25px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1); }
-        .btn { background: linear-gradient(90deg, #00ffcc, #00ccff); color: black; border: none; padding: 12px; margin: 6px 0; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; }
-        .btn:disabled { background: #444; color: #888; }
+        body { margin: 0; background: #050510; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; overflow: hidden; user-select: none; }
+        #game-container { display: none; flex-direction: column; align-items: center; justify-content: space-around; height: 100vh; padding: 20px; box-sizing: border-box; }
+        
+        /* Интро */
+        #intro-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; box-sizing: border-box; }
+        .intro-title { font-size: 28px; font-weight: bold; color: #00ffcc; margin-bottom: 15px; }
+        
+        /* Прогресс-бары */
+        .bar-bg { width: 100%; height: 8px; background: #222; border-radius: 4px; margin: 5px 0; overflow: hidden; }
+        #energy-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ffcc00, #ff6600); transition: 0.3s; }
+        #evo-fill { width: 0%; height: 100%; background: #00ffcc; transition: 0.5s; }
+
+        #score { font-size: 40px; font-weight: bold; color: #00ffcc; text-shadow: 0 0 10px rgba(0,255,204,0.3); }
+        
+        /* Главный объект с аурой */
+        #main-obj { width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; font-size: 80px; cursor: pointer; transition: transform 0.05s; position: relative; }
+        #main-obj:active { transform: scale(0.92); }
+        #main-obj::after { content: ''; position: absolute; width: 120%; height: 120%; background: radial-gradient(circle, rgba(119, 0, 255, 0.15) 0%, transparent 70%); z-index: -1; animation: auraPulse 2s infinite; }
+
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+        .btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px 5px; border-radius: 10px; font-size: 11px; cursor: pointer; }
+        .btn:disabled { opacity: 0.2; }
+        .ad-btn { grid-column: span 2; background: linear-gradient(90deg, #7700ff, #ff00ff); border: none; font-weight: bold; height: 45px; }
+
+        /* --- АНИМАЦИЯ ВЫЛЕТАЮЩИХ ЦИФР --- */
+        .click-text { position: absolute; color: #fff; font-weight: bold; font-size: 24px; pointer-events: none; animation: floatUp 0.8s ease-out forwards; text-shadow: 0 0 5px rgba(255,255,255,0.5); z-index: 50; }
+        .plus { color: #00ffcc; } /* Монеты от клика - сине-зеленые */
+        .ad-plus { color: #ff00ff; } /* Монеты от рекламы - розовые */
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-100px) scale(0.8); }
+        }
+        @keyframes auraPulse { 0% { transform: scale(1); opacity: 0.1; } 50% { transform: scale(1.1); opacity: 0.2; } 100% { transform: scale(1); opacity: 0.1; } }
     </style>
 </head>
 <body>
+    <div id="intro-screen">
+        <div class="intro-title">CYBER EVOLUTION</div>
+        <p style="font-size: 14px; color: #aaa;">Проведите кристалл через эпохи цифровой эволюции.</p>
+        <p style="font-size: 14px; color: #ff00ff;">💎 ➔ 🔋 ➔ 🦾 ➔ 🌌 ➔ 👑</p>
+        <button class="btn ad-btn" style="padding: 10px 30px; margin-top: 20px;" onclick="startGame()">НАЧАТЬ</button>
+    </div>
+
     <div id="game-container">
-        <div id="score-box">
+        <div style="width: 100%;">
+            <div id="level-text" style="color:#ff00ff; letter-spacing:1px; font-size: 14px;">ЭРА: <span id="era-name">Зарождение</span></div>
             <div id="score">0</div>
-            <div style="color: #00ffcc; opacity: 0.8;">КЛИК: +<span id="p-val">1</span> | АВТО: <span id="a-val">0</span>/с</div>
+            <div class="bar-bg"><div id="evo-fill"></div></div>
+            <div style="font-size: 10px; text-align: left; margin-top: 8px;">Энергия: <span id="en-val">100</span>%</div>
+            <div class="bar-bg"><div id="energy-fill"></div></div>
         </div>
-        <div id="click-area" onclick="handleTouch(event)">💎</div>
-        <div id="shop">
-            <button id="up1" class="btn" onclick="buy(1)">⚡ СИЛА КЛИКА +5 (Цена: <span id="p-price">50</span>)</button>
-            <button id="up2" class="btn" onclick="buy(2)">🤖 АВТО-КЛИКЕР (Цена: <span id="a-price">150</span>)</button>
-            <button id="ad-btn" class="btn" onclick="showAd()" style="background: linear-gradient(90deg, #ff00ff, #7700ff); color: white;">📺 +50 МОНЕТ ЗА РЕКЛАМУ</button>
+
+        <div id="main-obj" onclick="clickObj(event)">💎</div>
+
+        <div class="shop-grid">
+            <button id="up1" class="btn" onclick="buy(1)">💪 СИЛА +1<br><span id="p-price">50</span> 💰</button>
+            <button id="up2" class="btn" onclick="buy(2)">🤖 АВТО +2<br><span id="a-price">200</span> 💰</button>
+            <button id="ad-btn" class="btn ad-btn" onclick="showAd()">📺 ПОЛУЧИТЬ +500 💰 И ЭНЕРГИЮ</button>
         </div>
     </div>
 
     <script>
-        let coins = 0;
-        let power = 1;
-        let autoIncome = 0;
-        let powerPrice = 50;
-        let autoPrice = 150;
+        let coins = 0; let power = 1; let auto = 0;
+        let pPrice = 50; let aPrice = 200;
+        let energy = 100; let maxEnergy = 100;
+        let era = 1;
+        const eras = ["Зарождение", "Техно", "Киберпанк", "Сингулярность", "Божество"];
+        const icons = ["💎", "🔋", "🦾", "🌌", "👑"];
+        const targets = [1000, 10000, 100000, 1000000, 999999999];
+
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        function loadSave() {
+            if (localStorage.getItem('ce_v2_save')) {
+                const s = JSON.parse(localStorage.getItem('ce_v2_save'));
+                coins = s.c; power = s.p; auto = s.a; pPrice = s.pp; aPrice = s.ap; era = s.e;
+                if (localStorage.getItem('ce_intro')) {
+                    document.getElementById('intro-screen').style.display = 'none';
+                    document.getElementById('game-container').style.display = 'flex';
+                }
+            }
+        }
+
+        function saveGame() {
+            const s = { c: coins, p: power, a: auto, pp: pPrice, ap: aPrice, e: era };
+            localStorage.setItem('ce_v2_save', JSON.stringify(s));
+        }
+
         function updateUI() {
             document.getElementById('score').innerText = Math.floor(coins);
-            document.getElementById('p-val').innerText = power;
-            document.getElementById('a-val').innerText = autoIncome;
-            document.getElementById('p-price').innerText = powerPrice;
-            document.getElementById('a-price').innerText = autoPrice;
-            document.getElementById('up1').disabled = coins < powerPrice;
-            document.getElementById('up2').disabled = coins < autoPrice;
-        }
+            document.getElementById('era-name').innerText = eras[era-1];
+            document.getElementById('main-obj').innerText = icons[era-1];
+            document.getElementById('p-price').innerText = pPrice;
+            document.getElementById('a-price').innerText = aPrice;
+            document.getElementById('en-val').innerText = Math.floor(energy);
+            document.getElementById('energy-fill').style.width = energy + '%';
+            
+            let progress = (coins / targets[era-1]) * 100;
+            document.getElementById('evo-fill').style.width = Math.min(progress, 100) + '%';
+            
+            document.getElementById('up1').disabled = coins < pPrice;
+            document.getElementById('up2').disabled = coins < aPrice;
 
-        function handleTouch(e) {
-            coins += power;
-            createCoinEffect(e);
-            updateUI();
-        }
-
-        function createCoinEffect(e) {
-            const coin = document.createElement('div');
-            coin.className = 'coin-particle';
-            coin.innerText = '💰';
-            let x = e.clientX || (e.touches && e.touches[0].clientX);
-            let y = e.clientY || (e.touches && e.touches[0].clientY);
-            coin.style.left = x + 'px';
-            coin.style.top = y + 'px';
-            document.body.appendChild(coin);
-            setTimeout(() => coin.remove(), 800);
-        }
-
-        function buy(type) {
-            if (type === 1 && coins >= powerPrice) {
-                coins -= powerPrice; power += 5; powerPrice = Math.floor(powerPrice * 1.5);
-            } else if (type === 2 && coins >= autoPrice) {
-                coins -= autoPrice; autoIncome += 1; autoPrice = Math.floor(autoPrice * 1.8);
+            if (coins >= targets[era-1] && era < 5) {
+                era++;
+                coins = 0;
+                power *= 2; 
+                tg.showConfirm("ЭВОЛЮЦИЯ! Монеты обнулены, сила клика удвоена!");
+                saveGame();
             }
-            updateUI();
         }
 
-        setInterval(() => { if (autoIncome > 0) { coins += autoIncome; updateUI(); } }, 1000);
+        /* --- ФУНКЦИЯ ДЛЯ ВЫЛЕТАЮЩИХ ЦИФР --- */
+        function createClickEffect(e, text, type) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            div.className = 'click-text';
+            
+            if (type === 'ad') div.classList.add('ad-plus');
+            else div.classList.add('plus');
 
-        // --- РЕКЛАМА ---
+            // Получаем координаты клика (подходит и для телефона)
+            const x = e.clientX || e.touches[0].clientX;
+            const y = e.clientY || e.touches[0].clientY;
+            
+            div.style.left = (x - 15) + 'px'; // Центрируем цифры
+            div.style.top = (y - 30) + 'px';
+            
+            document.body.appendChild(div);
+            
+            // Удаляем элемент через 800мс, когда анимация закончится
+            setTimeout(() => div.remove(), 800);
+        }
+
+        function clickObj(e) {
+            if (energy >= 1) {
+                coins += power;
+                energy -= 1;
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                
+                // Создаем эффект при каждом клике
+                createClickEffect(e, '+' + power);
+                
+                updateUI();
+            } else {
+                tg.showAlert("Энергия на нуле!");
+            }
+        }
+
+        function startGame() {
+            localStorage.setItem('ce_intro', true);
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('game-container').style.display = 'flex';
+        }
+
+        setInterval(() => {
+            if (energy < maxEnergy) energy += 0.2;
+            if (auto > 0) coins += (auto / 10);
+            updateUI();
+        }, 1000);
+
+        setInterval(saveGame, 30000);
+
+        function buy(t) {
+            if (t===1 && coins>=pPrice) { coins-=pPrice; power+=1; pPrice=Math.floor(pPrice*2.5); }
+            if (t===2 && coins>=aPrice) { coins-=aPrice; auto+=2; aPrice=Math.floor(aPrice*3); }
+            saveGame(); updateUI();
+        }
+
         function showAd() {
-            if (!window.AdsGram) {
-                tg.showAlert("Реклама еще грузится...");
-                return;
-            }
-            const controller = window.AdsGram.init({ blockId: "25802" });
-            controller.show()
-                .then(() => {
-                    coins += 50;
-                    updateUI();
-                    tg.showAlert("Успех! +50 монет.");
-                })
-                .catch((e) => {
-                    console.log(e);
-                    tg.showAlert("Реклама пока не готова.");
-                });
+            if (!window.AdsGram) { tg.showAlert("Загрузка..."); return; }
+            const ad = window.AdsGram.init({ blockId: "25802" });
+            ad.show().then(() => {
+                coins += 500;
+                energy = 100;
+                saveGame(); updateUI();
+                tg.showAlert("Мега-буст получен!");
+            }).catch(() => { tg.showAlert("Реклама пока недоступна."); });
         }
-        updateUI();
+
+        loadSave();
     </script>
 </body>
 </html>  
