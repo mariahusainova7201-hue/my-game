@@ -7,9 +7,9 @@
     <script src="https://sad.adsgram.ai/js/adsgram-ad-sdk.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; color: white; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background: linear-gradient(to bottom, #000510, #001530); overflow: hidden; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: #000510; overflow: hidden; }
         
-        /* КИБЕР-ЧЕЛОВЕЧЕК */
+        /* ЧЕЛОВЕЧЕК */
         #player { position: absolute; bottom: 30px; left: 50%; width: 40px; height: 60px; transform: translateX(-50%); z-index: 5; display: none; }
         .p-head { position: absolute; top: 0; left: 10px; width: 20px; height: 20px; background: #0ff; border-radius: 50%; box-shadow: 0 0 15px #0ff; }
         .p-body { position: absolute; top: 22px; left: 5px; width: 30px; height: 25px; background: #0ff; border-radius: 5px; }
@@ -19,27 +19,25 @@
         .item { position: absolute; width: 30px; height: 30px; border-radius: 50%; z-index: 4; }
         .crystal { background: #f0f; box-shadow: 0 0 20px #f0f; }
 
-        /* Интерфейс */
         #ui { position: absolute; top: 15px; left: 15px; z-index: 10; font-size: 16px; display: none; }
         #timer-ui { position: absolute; top: 15px; right: 15px; color: #0f0; z-index: 10; font-size: 16px; display: none; }
-        #sound-toggle { position: absolute; bottom: 15px; right: 15px; z-index: 30; background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; }
+        #sound-toggle { position: absolute; bottom: 15px; right: 15px; z-index: 30; background: rgba(255,255,255,0.1); border: none; font-size: 24px; cursor: pointer; color: white; border-radius: 50%; width: 50px; height: 50px; }
         
-        /* Экраны */
-        .overlay { position: absolute; text-align: center; z-index: 20; background: rgba(0,0,0,0.9); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .btn { padding: 20px 45px; background: #f0f; color: #fff; border: none; border-radius: 40px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 0 30px #f0f; margin: 15px; }
+        .overlay { position: absolute; text-align: center; z-index: 20; background: rgba(0,0,0,0.95); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .btn { padding: 22px 50px; background: #f0f; color: #fff; border: none; border-radius: 40px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 0 30px #f0f; }
         .btn-start { background: #0ff; box-shadow: 0 0 30px #0ff; color: #000; }
     </style>
 </head>
 <body>
 
-<audio id="bg-music" loop src="https://cdn.pixabay.com/audio/2022/10/25/audio_276a7e025d.mp3"></audio>
+<audio id="bg-music" loop src="https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Ketsa/Night_Walk/Ketsa_-_04_-_Intergalactic.mp3"></audio>
 <audio id="catch-sound" src="https://cdn.pixabay.com/audio/2021/08/04/audio_01d4a03498.mp3"></audio>
 
 <div id="game-container">
     <button id="sound-toggle" onclick="toggleSound()">🔊</button>
 
     <div id="start-screen" class="overlay">
-        <h1 style="color: #0ff; text-shadow: 0 0 15px #0ff;">CYBER RUNNER</h1>
+        <h1 style="color: #0ff; text-shadow: 0 0 20px #0ff; font-size: 40px; margin-bottom: 30px;">CYBER RUNNER</h1>
         <button class="btn btn-start" onclick="startGame()">ИГРАТЬ</button>
     </div>
 
@@ -54,10 +52,9 @@
     </div>
 
     <div id="death-screen" class="overlay" style="display: none;">
-        <h2 style="color: #f0f;">ИГРА ОКОНЧЕНА</h2>
-        <p id="final-stats"></p>
+        <h2 style="color: #f0f; font-size: 32px;">ИГРА ОКОНЧЕНА</h2>
+        <p id="final-stats" style="font-size: 20px; margin-bottom: 30px;"></p>
         <button id="ad-button" class="btn" onclick="showAd()">⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ</button>
-        <p style="font-size: 12px; opacity: 0.6;">(Чтобы начать заново, перезапустите игру)</p>
     </div>
 </div>
 
@@ -91,24 +88,25 @@
         player.style.display = 'block';
         document.getElementById('ui').style.display = 'block';
         document.getElementById('timer-ui').style.display = 'block';
-        if(!isMuted) bgMusic.play().catch(() => {});
+        
+        bgMusic.play().catch(() => {});
         
         gameActive = true;
         score = 0; seconds = 0; currentSpeed = 5;
         scoreElement.innerText = '0';
         timerElement.innerText = '0';
         
-        startLoop();
+        startLoops();
     }
 
-    function startLoop() {
+    function startLoops() {
         clearInterval(spawnInterval);
         clearInterval(timeInterval);
-        spawnInterval = setInterval(createCrystal, 1200);
+        spawnInterval = setInterval(createCrystal, 1100);
         timeInterval = setInterval(() => {
             if (gameActive) {
                 seconds++; timerElement.innerText = seconds;
-                if (seconds % 10 === 0) currentSpeed += 0.8;
+                if (seconds % 8 === 0) currentSpeed += 0.9;
             }
         }, 1000);
     }
@@ -137,7 +135,7 @@
             let pR = player.getBoundingClientRect(), cR = crystal.getBoundingClientRect();
             if (cR.bottom > pR.top && cR.left < pR.right && cR.right > pR.left && cR.top < pR.bottom) {
                 score++; scoreElement.innerText = score; crystal.remove();
-                catchSound.currentTime = 0; catchSound.play();
+                if(!isMuted) { catchSound.currentTime = 0; catchSound.play(); }
                 return;
             }
 
@@ -156,7 +154,7 @@
             localStorage.setItem('cyberHS', score);
             highScoreElement.innerText = score;
         }
-        document.getElementById('final-stats').innerText = `Кристаллов: ${score} | Время: ${seconds} сек.`;
+        document.getElementById('final-stats').innerText = `Счет: ${score} | Время: ${seconds} сек.`;
         deathScreen.style.display = 'flex';
     }
 
@@ -164,14 +162,26 @@
 
     function showAd() {
         adButton.innerText = "ЗАГРУЗКА...";
+        adButton.disabled = true;
+
+        // Если реклама не загрузится за 5 сек, даем нажать еще раз
+        const timeout = setTimeout(() => {
+            adButton.innerText = "⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ";
+            adButton.disabled = false;
+        }, 5000);
+
         AdController.show().then(() => {
+            clearTimeout(timeout);
             deathScreen.style.display = 'none';
             gameActive = true;
             adButton.innerText = "⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ";
-            startLoop();
+            adButton.disabled = false;
+            startLoops();
         }).catch(() => {
-            alert("Реклама не готова");
+            clearTimeout(timeout);
+            alert("Реклама не готова, попробуйте еще раз через секунду");
             adButton.innerText = "⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ";
+            adButton.disabled = false;
         });
     }
 </script>
