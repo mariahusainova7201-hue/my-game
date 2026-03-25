@@ -21,23 +21,23 @@
 
         #ui { position: absolute; top: 15px; left: 15px; z-index: 10; font-size: 16px; display: none; }
         #timer-ui { position: absolute; top: 15px; right: 15px; color: #0f0; z-index: 10; font-size: 16px; display: none; }
-        #sound-toggle { position: absolute; bottom: 15px; right: 15px; z-index: 30; background: rgba(255,255,255,0.1); border: none; font-size: 24px; cursor: pointer; color: white; border-radius: 50%; width: 50px; height: 50px; }
+        #sound-toggle { position: absolute; bottom: 15px; right: 15px; z-index: 30; background: none; border: none; font-size: 24px; cursor: pointer; }
         
-        .overlay { position: absolute; text-align: center; z-index: 20; background: rgba(0,0,0,0.95); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .btn { padding: 22px 50px; background: #f0f; color: #fff; border: none; border-radius: 40px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 0 30px #f0f; }
+        .overlay { position: absolute; text-align: center; z-index: 20; background: rgba(0,0,0,0.98); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .btn { padding: 25px 60px; background: #f0f; color: #fff; border: none; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 0 30px #f0f; }
         .btn-start { background: #0ff; box-shadow: 0 0 30px #0ff; color: #000; }
     </style>
 </head>
 <body>
 
-<audio id="bg-music" loop src="https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Ketsa/Night_Walk/Ketsa_-_04_-_Intergalactic.mp3"></audio>
-<audio id="catch-sound" src="https://cdn.pixabay.com/audio/2021/08/04/audio_01d4a03498.mp3"></audio>
+<audio id="bg-music" loop src="https://ia801007.us.archive.org/22/items/no-copyright-music-free-download/Night%20City%20-%20Cyberpunk.mp3"></audio>
+<audio id="catch-sound" src="https://actions.google.com/sounds/v1/foley/beeps_and_clicks.ogg"></audio>
 
 <div id="game-container">
     <button id="sound-toggle" onclick="toggleSound()">🔊</button>
 
     <div id="start-screen" class="overlay">
-        <h1 style="color: #0ff; text-shadow: 0 0 20px #0ff; font-size: 40px; margin-bottom: 30px;">CYBER RUNNER</h1>
+        <h1 style="color: #0ff; text-shadow: 0 0 20px #0ff; font-size: 45px;">CYBER RUNNER</h1>
         <button class="btn btn-start" onclick="startGame()">ИГРАТЬ</button>
     </div>
 
@@ -52,8 +52,8 @@
     </div>
 
     <div id="death-screen" class="overlay" style="display: none;">
-        <h2 style="color: #f0f; font-size: 32px;">ИГРА ОКОНЧЕНА</h2>
-        <p id="final-stats" style="font-size: 20px; margin-bottom: 30px;"></p>
+        <h2 style="color: #f0f; font-size: 35px;">ИГРА ОКОНЧЕНА</h2>
+        <p id="final-stats" style="font-size: 22px; margin-bottom: 40px;"></p>
         <button id="ad-button" class="btn" onclick="showAd()">⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ</button>
     </div>
 </div>
@@ -73,6 +73,8 @@
     let score = 0, seconds = 0, gameActive = false, currentSpeed = 5, isMuted = false;
     let spawnInterval, timeInterval;
 
+    const AdController = window.AdsGram.init({ blockId: "25872" });
+
     highScoreElement.innerText = localStorage.getItem('cyberHS') || 0;
 
     function toggleSound() {
@@ -89,13 +91,17 @@
         document.getElementById('ui').style.display = 'block';
         document.getElementById('timer-ui').style.display = 'block';
         
-        bgMusic.play().catch(() => {});
+        // Попытка запустить музыку после клика
+        bgMusic.play().catch(e => console.log("Music blocked"));
         
         gameActive = true;
         score = 0; seconds = 0; currentSpeed = 5;
         scoreElement.innerText = '0';
         timerElement.innerText = '0';
         
+        // Сразу пробуем подгрузить рекламу для следующего раза
+        AdController.show().catch(() => {}); 
+
         startLoops();
     }
 
@@ -106,7 +112,7 @@
         timeInterval = setInterval(() => {
             if (gameActive) {
                 seconds++; timerElement.innerText = seconds;
-                if (seconds % 8 === 0) currentSpeed += 0.9;
+                if (seconds % 8 === 0) currentSpeed += 0.8;
             }
         }, 1000);
     }
@@ -158,28 +164,18 @@
         deathScreen.style.display = 'flex';
     }
 
-    const AdController = window.AdsGram.init({ blockId: "25872" });
-
     function showAd() {
         adButton.innerText = "ЗАГРУЗКА...";
         adButton.disabled = true;
 
-        // Если реклама не загрузится за 5 сек, даем нажать еще раз
-        const timeout = setTimeout(() => {
-            adButton.innerText = "⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ";
-            adButton.disabled = false;
-        }, 5000);
-
         AdController.show().then(() => {
-            clearTimeout(timeout);
             deathScreen.style.display = 'none';
             gameActive = true;
             adButton.innerText = "⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ";
             adButton.disabled = false;
             startLoops();
         }).catch(() => {
-            clearTimeout(timeout);
-            alert("Реклама не готова, попробуйте еще раз через секунду");
+            alert("Реклама подгружается, подождите 3 секунды и нажмите еще раз");
             adButton.innerText = "⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ";
             adButton.disabled = false;
         });
