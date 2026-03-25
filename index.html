@@ -3,43 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Cyber Runner: Evolution</title>
+    <title>Cyber Runner: Music & Action</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://adsgram.ai/sdk"></script>
     <style>
         body { margin: 0; background: #050510; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; overflow: hidden; user-select: none; touch-action: none; }
         #game-container { display: none; flex-direction: column; height: 100vh; justify-content: space-between; padding: 20px; box-sizing: border-box; }
         
-        #score-board { padding: 10px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(0,255,204,0.2); }
-        #score { font-size: 35px; font-weight: bold; color: #00ffcc; }
+        /* КНОПКА ЗВУКА */
+        #music-btn { position: absolute; top: 15px; right: 15px; font-size: 22px; cursor: pointer; z-index: 2000; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+        #score-board { padding: 10px; background: rgba(0,255,204,0.05); border-radius: 15px; border: 1px solid rgba(0,255,204,0.2); }
+        #score { font-size: 38px; font-weight: bold; color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
 
         /* ИГРОВАЯ ЗОНА */
-        #game-area { position: relative; width: 100%; height: 50vh; background: rgba(0,0,0,0.3); border-radius: 20px; overflow: hidden; border: 1px solid #1a1a2e; margin: 15px 0; }
-        #player { position: absolute; bottom: 20px; left: 50%; font-size: 50px; transform: translateX(-50%); transition: left 0.1s ease-out; z-index: 10; }
-        .falling-item { position: absolute; font-size: 30px; top: -50px; }
+        #game-area { position: relative; width: 100%; height: 50vh; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,255,204,0.05) 100%); border-radius: 20px; overflow: hidden; border: 1px solid #1a1a2e; margin: 15px 0; }
+        #player { position: absolute; bottom: 20px; left: 50%; font-size: 55px; transform: translateX(-50%); transition: left 0.1s ease-out; z-index: 10; filter: drop-shadow(0 0 10px rgba(0,255,204,0.5)); }
+        .falling-item { position: absolute; font-size: 32px; top: -50px; z-index: 5; }
 
         .bar-bg { width: 100%; height: 6px; background: #222; border-radius: 3px; margin: 5px 0; overflow: hidden; }
-        #energy-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ffcc00, #ff6600); }
-        #evo-fill { width: 0%; height: 100%; background: #00ffcc; }
+        #energy-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ffcc00, #ff6600); transition: 0.2s; }
+        #evo-fill { width: 0%; height: 100%; background: #00ffcc; transition: 0.5s; }
 
-        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px; border-radius: 10px; font-size: 11px; }
-        .ad-btn { grid-column: span 2; background: linear-gradient(90deg, #7700ff, #ff00ff); border: none; font-weight: bold; }
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 12px; font-size: 11px; }
+        .ad-btn { grid-column: span 2; background: linear-gradient(90deg, #7700ff, #ff00ff); border: none; font-weight: bold; height: 50px; box-shadow: 0 4px 15px rgba(119,0,255,0.3); }
     </style>
 </head>
 <body>
     <audio id="bg-music" loop><source src="music.mp3" type="audio/mpeg"></audio>
+    <div id="music-btn" onclick="toggleMusic()">🔇</div>
 
-    <div id="intro-screen" style="position:fixed; inset:0; background:#000; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px;">
-        <h1 style="color:#00ffcc;">CYBER RUNNER</h1>
-        <p style="color:#aaa; font-size:14px; text-align:center;">Води пальцем, чтобы ловить кристаллы 💎 и избегать ошибок 👾</p>
-        <button class="btn ad-btn" style="padding: 15px 40px;" onclick="startGame()">ПОЕХАЛИ!</button>
+    <div id="intro-screen" style="position:fixed; inset:0; background:#000; z-index:3000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px;">
+        <h1 style="color:#00ffcc; letter-spacing:3px;">CYBER RUNNER</h1>
+        <p style="color:#aaa; font-size:14px; text-align:center; margin-bottom:30px;">Управляй героем! Лови кристаллы 💎 и избегай вирусов 👾</p>
+        <button class="btn ad-btn" style="width:200px;" onclick="startGame()">НАЧАТЬ</button>
     </div>
 
     <div id="game-container">
         <div id="score-board">
             <div id="score">0</div>
-            <div style="font-size:10px;">Энергия</div>
+            <div style="display:flex; justify-content:space-between; font-size:10px; color:#aaa; margin-top:5px;"><span>Энергия</span><span id="en-text">100%</span></div>
             <div class="bar-bg"><div id="energy-fill"></div></div>
             <div class="bar-bg"><div id="evo-fill"></div></div>
         </div>
@@ -49,9 +53,9 @@
         </div>
 
         <div class="shop-grid">
-            <button id="up1" class="btn" onclick="buy(1)">💎 ЦЕННОСТЬ +1<br><span id="p-price">50</span></button>
-            <button id="up2" class="btn" onclick="buy(2)">🤖 МАГНИТ (АВТО)<br><span id="a-price">200</span></button>
-            <button class="btn ad-btn" onclick="showAd()">📺 ПОЛНИТЬ ЭНЕРГИЮ</button>
+            <button id="up1" class="btn" onclick="buy(1)">💎 ЦЕННОСТЬ +1<br><span id="p-price">50</span> 💰</button>
+            <button id="up2" class="btn" onclick="buy(2)">🔋 СТАМИНА +2<br><span id="a-price">200</span> 💰</button>
+            <button class="btn ad-btn" onclick="showAd()">📺 ВОССТАНОВИТЬ ЭНЕРГИЮ (+500 💰)</button>
         </div>
     </div>
 
@@ -59,55 +63,66 @@
         let coins = 0; let power = 1; let auto = 0;
         let pPrice = 50; let aPrice = 200;
         let energy = 100; let era = 1;
+        let isMusicPlaying = false;
+
         const tg = window.Telegram.WebApp;
         const gameArea = document.getElementById('game-area');
         const player = document.getElementById('player');
         const heroes = ["🏃‍♂️", "🦾", "🤖", "⚡", "👑"];
-        const targets = [1000, 5000, 20000, 100000, 999999];
+        const targets = [1000, 5000, 25000, 100000, 999999];
+
+        function toggleMusic() {
+            const m = document.getElementById('bg-music');
+            const btn = document.getElementById('music-btn');
+            if (isMusicPlaying) { m.pause(); btn.innerText = "🔇"; }
+            else { m.play().catch(()=>{}); btn.innerText = "🔊"; }
+            isMusicPlaying = !isMusicPlaying;
+        }
 
         function startGame() {
             document.getElementById('intro-screen').style.display = 'none';
             document.getElementById('game-container').style.display = 'flex';
-            document.getElementById('bg-music').play().catch(()=>{});
+            const m = document.getElementById('bg-music');
+            m.play().then(() => { isMusicPlaying = true; document.getElementById('music-btn').innerText = "🔊"; }).catch(()=>{});
             spawnLoop();
+            updateUI();
         }
 
-        // Управление персонажем (следование за пальцем)
+        // Движение пальцем
         gameArea.addEventListener('touchmove', (e) => {
             const rect = gameArea.getBoundingClientRect();
             let x = e.touches[0].clientX - rect.left;
             let percent = (x / rect.width) * 100;
-            if(percent < 5) percent = 5;
-            if(percent > 95) percent = 95;
+            if(percent < 8) percent = 8;
+            if(percent > 92) percent = 92;
             player.style.left = percent + '%';
         });
 
-        // Создание падающих предметов
         function spawnItem() {
-            if (energy <= 0) return;
+            if (energy <= 5) return;
             const item = document.createElement('div');
-            const isBomb = Math.random() < 0.2; // 20% шанс препятствия
+            const isBomb = Math.random() < 0.25;
             item.className = 'falling-item';
             item.innerText = isBomb ? '👾' : '💎';
-            item.style.left = Math.random() * 90 + '%';
+            item.style.left = (Math.random() * 80 + 10) + '%';
             gameArea.appendChild(item);
 
             let pos = -50;
+            let speed = 3 + (era * 0.7);
             let fallInterval = setInterval(() => {
-                pos += 3 + (era * 0.5); // Скорость растет с эрой
+                pos += speed;
                 item.style.top = pos + 'px';
 
-                // Проверка столкновения
                 const pRect = player.getBoundingClientRect();
                 const iRect = item.getBoundingClientRect();
 
-                if (iRect.bottom >= pRect.top && iRect.right >= pRect.left && iRect.left <= pRect.right && iRect.top <= pRect.bottom) {
+                if (iRect.bottom >= pRect.top + 10 && iRect.right >= pRect.left && iRect.left <= pRect.right && iRect.top <= pRect.bottom) {
                     if (isBomb) {
-                        energy -= 10;
-                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                        energy -= 15;
+                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
                     } else {
                         coins += power;
-                        energy -= 0.5;
+                        energy -= 0.3;
                         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                     }
                     clearInterval(fallInterval);
@@ -123,36 +138,38 @@
         }
 
         function spawnLoop() {
-            setInterval(spawnItem, 800 - (era * 100)); // Чаще спавним с ростом уровня
+            setInterval(spawnItem, 900 - (era * 100));
         }
 
         function updateUI() {
             document.getElementById('score').innerText = Math.floor(coins);
             document.getElementById('energy-fill').style.width = energy + '%';
-            document.getElementById('evo-fill').style.width = (coins/targets[era-1]*100) + '%';
-            document.getElementById('p-price').innerText = pPrice;
-            document.getElementById('a-price').innerText = aPrice;
+            document.getElementById('en-text').innerText = Math.floor(energy) + '%';
+            document.getElementById('evo-fill').style.width = Math.min((coins/targets[era-1]*100), 100) + '%';
+            document.getElementById('p-price').innerText = Math.floor(pPrice);
+            document.getElementById('a-price').innerText = Math.floor(aPrice);
             player.innerText = heroes[era-1];
 
             if (coins >= targets[era-1] && era < 5) {
                 era++; coins = 0; power *= 2;
-                tg.showAlert("ЭВОЛЮЦИЯ! Твой герой стал быстрее!");
+                tg.showAlert("ЭВОЛЮЦИЯ! Твой герой стал сильнее!");
             }
             if (energy < 0) energy = 0;
         }
 
-        // Регенерация энергии
-        setInterval(() => { if(energy < 100) energy += 0.5; updateUI(); }, 1000);
+        setInterval(() => { if(energy < 100) energy += 0.8; updateUI(); }, 1000);
 
         function buy(t) {
-            if(t===1 && coins>=pPrice){ coins-=pPrice; power+=1; pPrice*=2.5; }
-            if(t===2 && coins>=aPrice){ coins-=aPrice; auto+=1; aPrice*=3; }
+            if(t===1 && coins>=pPrice){ coins-=pPrice; power+=1; pPrice*=2.8; }
+            if(t===2 && coins>=aPrice){ coins-=aPrice; energy=100; aPrice*=3; }
             updateUI();
         }
 
         function showAd() {
-            if (!window.AdsGram) return;
-            window.AdsGram.init({ blockId: "25802" }).show().then(() => { energy = 100; updateUI(); });
+            if (!window.AdsGram) { tg.showAlert("Загрузка..."); return; }
+            window.AdsGram.init({ blockId: "25802" }).show().then(() => { 
+                coins += 500; energy = 100; updateUI(); 
+            }).catch(() => tg.showAlert("Реклама в проверке."));
         }
     </script>
 </body>
