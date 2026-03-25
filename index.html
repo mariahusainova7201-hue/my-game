@@ -1,1 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Cyber Runner</title>
+    <script src="https://sad.adsgram.ai/js/adsgram-ad-sdk.js"></script>
+    <style>
+        body { margin: 0; background: #000; color: #fff; overflow: hidden; font-family: sans-serif; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: #000510; }
+        
+        /* ЧЕЛОВЕЧЕК */
+        #player { position: absolute; bottom: 40px; left: 50%; width: 40px; height: 60px; transform: translateX(-50%); z-index: 10; display: none; }
+        .p-head { position: absolute; top: 0; left: 10px; width: 20px; height: 20px; background: #0ff; border-radius: 50%; box-shadow: 0 0 10px #0ff; }
+        .p-body { position: absolute; top: 22px; left: 5px; width: 30px; height: 25px; background: #0ff; border-radius: 3px; }
+        .p-leg { position: absolute; bottom: 0; width: 8px; height: 15px; background: #0ff; }
+        .p-leg.l { left: 8px; } .p-leg.r { right: 8px; }
 
+        .crystal { position: absolute; width: 30px; height: 30px; background: #f0f; border-radius: 50%; box-shadow: 0 0 15px #f0f; z-index: 5; }
+
+        #ui { position: absolute; top: 20px; left: 20px; z-index: 20; font-size: 22px; display: none; font-weight: bold; color: #0ff; }
+        
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        .btn { padding: 25px 60px; background: #0ff; color: #000; border: none; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px #0ff; }
+        #ad-btn { background: #f0f; color: #fff; margin-top: 20px; display: none; box-shadow: 0 0 20px #f0f; }
+        
+        #sound-btn { position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 10px; border-radius: 50%; z-index: 150; font-size: 20px; }
+    </style>
+</head>
+<body>
+
+<audio id="bg-music" loop src="https://ia801007.us.archive.org/22/items/no-copyright-music-free-download/Night%20City%20-%20Cyberpunk.mp3"></audio>
+<audio id="catch-sound" src="https://actions.google.com/sounds/v1/foley/beeps_and_clicks.ogg"></audio>
+
+<div id="game-container">
+    <button id="sound-btn" onclick="toggleSound()">🔊</button>
+
+    <div id="start-screen" class="overlay">
+        <h1 style="color: #0ff; margin-bottom: 30px; font-size: 40px;">CYBER RUNNER</h1>
+        <button class="btn" onclick="startGame()">ИГРАТЬ</button>
+    </div>
+
+    <div id="ui">Счет: <span id="score">0</span></div>
+    
+    <div id="player">
+        <div class="p-head"></div>
+        <div class="p-body"></div>
+        <div class="p-leg l"></div>
+        <div class="p-leg r"></div>
+    </div>
+
+    <div id="death-screen" class="overlay" style="display: none;">
+        <h2 style="color: #f0f; font-size: 30px;">КОНЕЦ ИГРЫ</h2>
+        <p id="stats" style="font-size: 24px; margin-bottom: 20px;"></p>
+        <button id="ad-btn" class="btn" onclick="showAd()">⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ</button>
+    </div>
+</div>
+
+<script>
+    const player = document.getElementById('player');
+    const scoreText = document.getElementById('score');
+    const deathScreen = document.getElementById('death-screen');
+    const adBtn = document.getElementById('ad-btn');
+    const startScreen = document.getElementById('start-screen');
+    const bgMusic = document.getElementById('bg-music');
+    const catchSound = document.getElementById('catch-sound');
+
+    let score = 0, gameActive = false, speed = 5, isMuted = false;
+    let spawnInterval;
+
+    const AdController = window.AdsGram.init({ blockId: "25872" });
+
+    function toggleSound() {
+        isMuted = !isMuted;
+        bgMusic.muted = isMuted;
+        catchSound.muted = isMuted;
+        document.getElementById('sound-btn').innerText = isMuted ? "🔇" : "🔊";
+    }
+
+    function startGame() {
+        startScreen.style.display = 'none';
+        deathScreen.style.display = 'none';
+        player.style.display = 'block';
+        document.getElementById('ui').style.display = 'block';
+        
+        score = 0; speed = 5;
+        scoreText.innerText = '0';
+        gameActive = true;
+
+        bgMusic.play().catch(() => {});
+        startSpawning();
+    }
+
+    function startSpawning() {
+        if(spawnInterval) clearInterval(spawnInterval);
+        spawnInterval = setInterval(() => {
+            if(gameActive) createCrystal();
+        }, 1200);
+    }
+
+    document.addEventListener('touchmove', (e) => {
+        if (!gameActive) return;
+        let x = e.touches[0].clientX - 20;
+        x = Math.max(0, Math.min(x, window.innerWidth - 40));
+        player.style.left = x + 'px';
+    });
+
+    function createCrystal() {
+        const c = document.createElement('div');
+        c.className = 'crystal';
+        c.style.left = Math.random() * (window.innerWidth - 30) + 'px';
+        c.style.top = '-40px';
+        document.getElementById('game-container').appendChild(c);
+
+        let top = -40;
+        function fall() {
+            if (!gameActive) { c.remove(); return; }
+            top += speed;
+            c.style.top = top + 'px';
+
+            let pR = player.getBoundingClientRect();
+            let cR = c.getBoundingClientRect();
+
+            if (cR.bottom > pR.top && cR.left < pR.right && cR.right > pR.left && cR.top < pR.bottom) {
+                score++; 
+                scoreText.innerText = score; 
+                c.remove(); 
+                catchSound.currentTime = 0; catchSound.play();
+                if (score % 5 === 0) speed += 0.6;
+                return;
+            }
+
+            if (top > window.innerHeight) { c.remove(); gameOver(); } 
+            else { requestAnimationFrame(fall); }
+        }
+        requestAnimationFrame(fall);
+    }
+
+    function gameOver() {
+        gameActive = false;
+        clearInterval(spawnInterval);
+        document.getElementById('stats').innerText = "Твой счет: " + score;
+        deathScreen.style.display = 'flex';
+        adBtn.style.display = 'block';
+    }
+
+    function showAd() {
+        adBtn.innerText = "ЗАГРУЗКА...";
+        AdController.show().then(() => {
+            adBtn.innerText = "⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ";
+            startGame();
+        }).catch(() => {
+            alert("Реклама подгружается, подожди 3 секунды");
+            adBtn.innerText = "⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ";
+        });
+    }
+</script>
+</body>
+</html> 
