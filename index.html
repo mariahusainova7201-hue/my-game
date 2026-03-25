@@ -7,156 +7,138 @@
     <script src="https://sad.adsgram.ai/js/adsgram-ad-sdk.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background: linear-gradient(to bottom, #000510, #001530); }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: linear-gradient(to bottom, #000510, #001530); display: flex; justify-content: center; align-items: center; }
         
+        /* Персонаж */
         #player { 
             position: absolute; bottom: 30px; left: 50%; 
-            width: 60px; height: 60px; transform: translateX(-50%);
-            background: #0ff; border-radius: 12px; box-shadow: 0 0 25px #0ff;
-            transition: left 0.05s linear;
+            width: 50px; height: 50px; transform: translateX(-50%);
+            background: #0ff; border-radius: 10px; box-shadow: 0 0 25px #0ff;
+            z-index: 5; display: none;
         }
 
-        .item { position: absolute; width: 35px; height: 35px; border-radius: 50%; }
-        .crystal { background: #f0f; box-shadow: 0 0 20px #f0f; }
+        /* Предметы */
+        .item { position: absolute; width: 30px; height: 30px; border-radius: 50%; z-index: 4; }
+        .crystal { background: #f0f; box-shadow: 0 0 15px #f0f; }
 
         /* Интерфейс */
-        #ui-left { position: absolute; top: 15px; left: 15px; color: #fff; z-index: 10; font-size: 16px; line-height: 1.4; }
-        #ui-right { position: absolute; top: 15px; right: 15px; text-align: right; color: #0f0; z-index: 10; font-size: 16px; }
+        #ui { position: absolute; top: 15px; left: 15px; color: #fff; z-index: 10; font-size: 16px; display: none; }
+        #timer-ui { position: absolute; top: 15px; right: 15px; color: #0f0; z-index: 10; font-size: 16px; display: none; }
         
-        #best-score { color: #ff0; font-weight: bold; font-size: 14px; }
-
-        #ad-button { 
-            position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%);
-            padding: 18px 35px; background: #f0f; color: #fff; border: none; 
-            border-radius: 30px; font-size: 18px; font-weight: bold; cursor: pointer; display: none;
-            box-shadow: 0 0 30px #f0f; z-index: 100;
-        }
+        /* Экраны */
+        .overlay { position: absolute; text-align: center; z-index: 20; color: white; background: rgba(0,0,0,0.8); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .btn { padding: 15px 40px; background: #0ff; color: #000; border: none; border-radius: 30px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px #0ff; margin: 10px; }
+        #ad-button { background: #f0f; box-shadow: 0 0 20px #f0f; display: none; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="ui-left">
-        Кристаллы: <span id="score">0</span><br>
-        <span id="best-score">Рекорд: <span id="high-score">0</span></span>
+    <div id="start-screen" class="overlay">
+        <h1>Cyber Runner</h1>
+        <p>Собирай кристаллы и выживай!</p>
+        <button class="btn" onclick="startGame()">ИГРАТЬ</button>
     </div>
-    <div id="ui-right">
-        Выживание: <span id="timer">0</span> сек.<br>
-        Скорость: <span id="speed-display">x1</span>
-    </div>
+
+    <div id="ui">Кристаллы: <span id="score">0</span><br>Рекорд: <span id="high-score">0</span></div>
+    <div id="timer-ui">Время: <span id="timer">0</span> сек.</div>
     
     <div id="player"></div>
-    <button id="ad-button" onclick="showAd()">⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ</button>
+
+    <div id="death-screen" class="overlay" style="display: none;">
+        <h2 id="death-msg">ИГРА ОКОНЧЕНА</h2>
+        <button id="ad-button" class="btn" onclick="showAd()">⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ</button>
+        <button class="btn" style="background: #555; color: #fff;" onclick="location.reload()">ЗАНОВО</button>
+    </div>
 </div>
 
 <script>
     const player = document.getElementById('player');
     const scoreElement = document.getElementById('score');
-    const highScoreElement = document.getElementById('high-score');
     const timerElement = document.getElementById('timer');
-    const speedElement = document.getElementById('speed-display');
+    const deathScreen = document.getElementById('death-screen');
     const adButton = document.getElementById('ad-button');
-    
-    let score = 0;
-    let seconds = 0;
-    let gameActive = true;
-    let currentSpeed = 5;
-    let spawnRate = 1200;
-    
-    // Загружаем рекорд из памяти
-    let savedHighScore = localStorage.getItem('cyberRunnerHighScore') || 0;
-    highScoreElement.innerText = savedHighScore;
+    const startScreen = document.getElementById('start-screen');
+
+    let score = 0, seconds = 0, gameActive = false, currentSpeed = 5;
+    let spawnInterval;
+
+    // Загрузка рекорда
+    document.getElementById('high-score').innerText = localStorage.getItem('hs') || 0;
+
+    function startGame() {
+        startScreen.style.display = 'none';
+        player.style.display = 'block';
+        document.getElementById('ui').style.display = 'block';
+        document.getElementById('timer-ui').style.display = 'block';
+        gameActive = true;
+        spawnInterval = setInterval(createCrystal, 1200);
+        startTimer();
+    }
 
     // Управление
     document.addEventListener('touchmove', (e) => {
         if (!gameActive) return;
-        let touch = e.touches[0];
-        let x = touch.clientX - 30;
-        if (x < 0) x = 0;
-        if (x > window.innerWidth - 60) x = window.innerWidth - 60;
+        let x = e.touches[0].clientX - 25;
+        x = Math.max(0, Math.min(x, window.innerWidth - 50));
         player.style.left = x + 'px';
     });
 
     function createCrystal() {
         if (!gameActive) return;
         const crystal = document.createElement('div');
-        crystal.classList.add('item', 'crystal');
-        crystal.style.left = Math.random() * (window.innerWidth - 40) + 'px';
-        crystal.style.top = '-50px';
+        crystal.className = 'item crystal';
+        crystal.style.left = Math.random() * (window.innerWidth - 30) + 'px';
+        crystal.style.top = '-40px';
         document.getElementById('game-container').appendChild(crystal);
 
-        let top = -50;
+        let top = -40;
         function fall() {
             if (!gameActive) { crystal.remove(); return; }
             top += currentSpeed;
             crystal.style.top = top + 'px';
 
-            let pRect = player.getBoundingClientRect();
-            let cRect = crystal.getBoundingClientRect();
-
-            if (cRect.bottom > pRect.top && cRect.left < pRect.right && cRect.right > pRect.left) {
-                score++;
-                scoreElement.innerText = score;
-                crystal.remove();
-                return;
+            let pR = player.getBoundingClientRect(), cR = crystal.getBoundingClientRect();
+            if (cR.bottom > pR.top && cR.left < pR.right && cR.right > pR.left) {
+                score++; scoreElement.innerText = score; crystal.remove(); return;
             }
 
-            if (top > window.innerHeight) {
-                crystal.remove();
-                gameOver();
-            } else {
-                requestAnimationFrame(fall);
-            }
+            if (top > window.innerHeight) { crystal.remove(); gameOver(); }
+            else { requestAnimationFrame(fall); }
         }
         fall();
     }
 
-    // Интервал появления предметов
-    let spawnTimer = setInterval(createCrystal, spawnRate);
-
-    // Таймер выживания и Ускорение каждые 10 сек
-    const gameTimer = setInterval(() => {
-        if (gameActive) {
-            seconds++;
-            timerElement.innerText = seconds;
-            
-            if (seconds % 10 === 0) {
-                currentSpeed += 0.8;
-                speedElement.innerText = "x" + (currentSpeed / 5).toFixed(1);
-                
-                // Ускоряем появление
-                clearInterval(spawnTimer);
-                spawnRate = Math.max(400, spawnRate - 100);
-                spawnTimer = setInterval(createCrystal, spawnRate);
+    function startTimer() {
+        setInterval(() => {
+            if (gameActive) {
+                seconds++; timerElement.innerText = seconds;
+                if (seconds % 10 === 0) currentSpeed += 0.7;
             }
-        }
-    }, 1000);
+        }, 1000);
+    }
 
     function gameOver() {
         gameActive = false;
-        clearInterval(spawnTimer);
+        clearInterval(spawnInterval);
         
-        // Проверяем рекорд
-        if (score > savedHighScore) {
-            localStorage.setItem('cyberRunnerHighScore', score);
-            highScoreElement.innerText = score;
-            alert("НОВЫЙ РЕКОРД! 🏆 Ты собрал " + score + " кристаллов!");
-        } else {
-            alert("ИГРА ОКОНЧЕНА\nКристаллы: " + score + "\nВремя: " + seconds + " сек.");
-        }
+        let hs = localStorage.getItem('hs') || 0;
+        if (score > hs) localStorage.setItem('hs', score);
         
+        document.getElementById('death-msg').innerText = "ТВОЙ СЧЕТ: " + score;
+        deathScreen.style.display = 'flex';
         adButton.style.display = 'block';
     }
 
-    // ИНИЦИАЛИЗАЦИЯ ADSGRAM (Вставь свой ID ниже!)
+    // РЕКЛАМА (ID: 25872)
     const AdController = window.AdsGram.init({ blockId: "25872" });
 
     function showAd() {
         AdController.show().then(() => {
-            location.reload(); // Перезапуск после рекламы
-        }).catch((err) => {
-            console.log("Ad Error", err);
             location.reload(); 
+        }).catch(() => {
+            alert("Реклама не готова, попробуй позже");
+            location.reload();
         });
     }
 </script>
