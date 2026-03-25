@@ -167,7 +167,7 @@
 
         function showAd() {
             if (!window.AdsGram) { tg.showAlert("Загрузка..."); return; }
-            window.AdsGram.init({ blockId: "25802" }).show().then(() => { 
+            window.AdsGram.init({ blockId: "25872" }).show().then(() => { 
                 coins += 500; energy = 100; updateUI(); 
             }).catch(() => tg.showAlert("Реклама в проверке."));
         }
