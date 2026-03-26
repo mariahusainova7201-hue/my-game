@@ -1,124 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <script src="https://sad.adsgram.ai/js/adsgram-ad-sdk.js"></script>
+    <title>Cyber Forest Pro</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://adsgram.ai/sdk"></script>
     <style>
-        body { margin: 0; background: #000; color: #fff; overflow: hidden; touch-action: none; font-family: sans-serif; }
-        #player { position: absolute; bottom: 60px; left: 50%; width: 50px; height: 70px; background: #0ff; transform: translateX(-50%); box-shadow: 0 0 20px #0ff; z-index: 100; border-radius: 8px; }
-        .item { position: absolute; width: 35px; height: 35px; background: #f0f; border-radius: 50%; box-shadow: 0 0 15px #f0f; z-index: 50; }
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
-        button { padding: 25px 50px; font-size: 24px; border-radius: 40px; border: none; cursor: pointer; font-weight: bold; background: #0ff; color: #000; }
+        body {
+            margin: 0; padding: 0;
+            background-image: url('https://files.oaiusercontent.com/file-77e1cb0b-8d47-4c61-8df6-8311a0fe21e5'); 
+            background-size: cover; background-position: center;
+            font-family: 'Segoe UI', sans-serif; overflow: hidden; color: white; text-align: center;
+        }
+        #game-container {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: space-between; height: 100vh;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        #score-box { margin-top: 50px; }
+        #score { font-size: 60px; font-weight: 900; text-shadow: 0 0 20px #00ffcc; }
+        #power-text { font-size: 14px; color: #00ffcc; opacity: 0.8; }
+        
+        #click-area {
+            width: 210px; height: 210px;
+            background: radial-gradient(circle, #ff00ff, #7700ff);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 90px;
+            box-shadow: 0 0 50px rgba(119, 0, 255, 0.7);
+            cursor: pointer; transition: transform 0.05s;
+            user-select: none; position: relative;
+        }
+        #click-area:active { transform: scale(0.92); }
+
+        #shop {
+            width: 90%; background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px); border-radius: 25px;
+            padding: 20px; margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn {
+            background: linear-gradient(90deg, #00ffcc, #00ccff);
+            color: black; border: none; padding: 12px; margin: 6px 0;
+            border-radius: 12px; font-weight: bold; width: 100%;
+            box-shadow: 0 4px 10px rgba(0, 255, 204, 0.3);
+        }
+        .btn:disabled { background: #444; color: #888; box-shadow: none; }
     </style>
 </head>
-<body onclick="moveMe(event)" ontouchstart="moveMe(event)">
-
-<div id="ui" style="position: absolute; top: 20px; left: 20px; font-size: 28px; font-weight: bold; color: #0ff;">Счет: 0</div>
-<div id="player"></div>
-
-<div id="start-screen" class="overlay">
-    <h1 style="color:#0ff; font-size: 40px;">CYBER RUNNER</h1>
-    <button onclick="startGame()">НАЧАТЬ</button>
-</div>
-
-<div id="death-screen" class="overlay" style="display:none">
-    <h1 style="color:#f0f">КОНЕЦ</h1>
-    <button id="ad-btn" onclick="showAd()">⚡ ВОСКРЕСНУТЬ</button>
-</div>
-
-<script>
-    let score = 0;
-    let gameActive = false;
-    let speed = 7;
-    let blockId = "25872";
-    
-    // Пытаемся запустить AdsGram отдельно, чтобы он не вешал игру
-    let AdController = null;
-    try {
-        AdController = window.AdsGram.init({ blockId: blockId });
-    } catch(e) { console.log("AdsGram error"); }
-
-    function startGame() {
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('death-screen').style.display = 'none';
-        score = 0;
-        speed = 7;
-        document.getElementById('ui').innerText = "Счет: 0";
-        gameActive = true;
+<body>
+    <div id="game-container">
+        <div id="score-box">
+            <div id="score">0</div>
+            <div id="power-text">КЛИК: +<span id="p-val">1</span></div>
+        </div>
         
-        // Очистка
-        document.querySelectorAll('.item').forEach(i => i.remove());
-        
-        spawn();
-    }
+        <div id="click-area" onclick="handleTouch(event)">💎</div>
 
-    // Управление: человечек прыгает в место нажатия
-    function moveMe(e) {
-        if (!gameActive) return;
-        let x = e.touches ? e.touches[0].clientX : e.clientX;
-        let player = document.getElementById('player');
-        let newX = x - 25;
-        newX = Math.max(0, Math.min(newX, window.innerWidth - 50));
-        player.style.left = newX + 'px';
-    }
+        <div id="shop">
+            <p style="margin-top: 0; font-size: 14px; letter-spacing: 1px;">МАГАЗИН УЛУЧШЕНИЙ</p>
+            <button id="up1" class="btn" onclick="buy(1)">⚡ СИЛА КЛИКА +5 (Цена: 50)</button>
+            <button id="up2" class="btn" onclick="buy(2)">🤖 АВТО-КЛИКЕР (Цена: 150)</button>
+            <button class="btn" onclick="showAd()" style="background: linear-gradient(90deg, #ff00ff, #7700ff); color: white; margin-top: 10px;">📺 +50 МОНЕТ ЗА РЕКЛАМУ</button>
+        </div>
+    </div>
 
-    function spawn() {
-        if (!gameActive) return;
-        
-        const c = document.createElement('div');
-        c.className = 'item';
-        c.style.left = Math.random() * (window.innerWidth - 40) + 'px';
-        c.style.top = '-50px';
-        document.body.appendChild(c);
-        
-        let top = -50;
-        const fall = setInterval(() => {
-            if (!gameActive) { clearInterval(fall); c.remove(); return; }
-            
-            top += speed;
-            c.style.top = top + 'px';
+    <script>
+        let coins = 0;
+        let power = 1;
+        const tg = window.Telegram.WebApp;
+        tg.expand();
 
-            let p = document.getElementById('player').getBoundingClientRect();
-            let cr = c.getBoundingClientRect();
-
-            // Столкновение
-            if (cr.bottom > p.top && cr.left < p.right && cr.right > p.left && cr.top < p.bottom) {
-                score++;
-                document.getElementById('ui').innerText = "Счет: " + score;
-                if(score % 5 === 0) speed += 0.8;
-                clearInterval(fall);
-                c.remove();
-            }
-
-            // Проигрыш
-            if (top > window.innerHeight) {
-                gameActive = false;
-                clearInterval(fall);
-                c.remove();
-                document.getElementById('death-screen').style.display = 'flex';
-            }
-        }, 20);
-
-        setTimeout(spawn, 1100);
-    }
-
-    function showAd() {
-        const btn = document.getElementById('ad-btn');
-        btn.innerText = "ЗАГРУЗКА...";
-        
-        if (AdController) {
-            AdController.show().then(() => {
-                btn.innerText = "⚡ ВОСКРЕСНУТЬ";
-                startGame();
-            }).catch(() => {
-                alert("Реклама не готова, но я тебя воскрешу просто так!");
-                startGame();
-            });
-        } else {
-            startGame();
+        function handleTouch(e) {
+            coins += power;
+            document.getElementById('score').innerText = Math.floor(coins);
         }
-    }
-</script>
+
+        // ИНИЦИАЛИЗАЦИЯ РЕКЛАМЫ С ТВОИМ ID
+        const AdController = window.AdsGram.init({ blockId: "25802" });
+
+        function showAd() {
+            AdController.show().then(() => {
+                coins += 50; 
+                document.getElementById('score').innerText = Math.floor(coins);
+                tg.showAlert("Поздравляем! Вы получили 50 монет!");
+            }).catch(() => {
+                tg.showAlert("Реклама пока не доступна.");
+            });
+        }
+        
+        // Тут можно добавить функции покупки buy(1) и buy(2), если они у тебя были готовы
+    </script>
 </body>
 </html>
