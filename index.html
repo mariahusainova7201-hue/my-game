@@ -1,157 +1,116 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Cyber Runner</title>
     <script src="https://sad.adsgram.ai/js/adsgram-ad-sdk.js"></script>
     <style>
-        body { margin: 0; background: #000; color: #fff; overflow: hidden; font-family: sans-serif; touch-action: none; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background: #000510; }
-        
-        /* ЧЕЛОВЕЧЕК */
-        #player { position: absolute; bottom: 40px; left: 50%; width: 40px; height: 60px; transform: translateX(-50%); z-index: 10; display: none; }
-        .p-head { position: absolute; top: 0; left: 10px; width: 20px; height: 20px; background: #0ff; border-radius: 50%; box-shadow: 0 0 10px #0ff; }
-        .p-body { position: absolute; top: 22px; left: 5px; width: 30px; height: 25px; background: #0ff; border-radius: 3px; }
-        .p-leg { position: absolute; bottom: 0; width: 8px; height: 15px; background: #0ff; }
-        .p-leg.l { left: 8px; } .p-leg.r { right: 8px; }
-
-        .crystal { position: absolute; width: 30px; height: 30px; background: #f0f; border-radius: 50%; box-shadow: 0 0 15px #f0f; z-index: 5; }
-
-        #ui { position: absolute; top: 20px; left: 20px; z-index: 20; font-size: 22px; display: none; font-weight: bold; color: #0ff; }
-        
+        body { margin: 0; background: #000; color: #fff; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        #player { position: absolute; bottom: 50px; left: 50%; width: 40px; height: 60px; background: #0ff; transform: translateX(-50%); box-shadow: 0 0 15px #0ff; z-index: 10; border-radius: 5px; }
+        .crystal { position: absolute; width: 30px; height: 30px; background: #f0f; border-radius: 50%; box-shadow: 0 0 10px #f0f; z-index: 5; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
-        .btn { padding: 25px 60px; background: #0ff; color: #000; border: none; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px #0ff; }
-        #ad-btn { background: #f0f; color: #fff; margin-top: 20px; display: none; box-shadow: 0 0 20px #f0f; }
-        
-        #sound-btn { position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 10px; border-radius: 50%; z-index: 150; font-size: 20px; }
+        button { padding: 20px 50px; font-size: 22px; border-radius: 40px; border: none; cursor: pointer; font-weight: bold; background: #0ff; }
     </style>
 </head>
 <body>
 
-<audio id="bg-music" loop src="https://ia801007.us.archive.org/22/items/no-copyright-music-free-download/Night%20City%20-%20Cyberpunk.mp3"></audio>
-<audio id="catch-sound" src="https://actions.google.com/sounds/v1/foley/beeps_and_clicks.ogg"></audio>
+<div id="ui" style="position: absolute; top: 20px; left: 20px; font-size: 24px;">Счет: 0</div>
+<div id="player"></div>
 
-<div id="game-container">
-    <button id="sound-btn" onclick="toggleSound()">🔊</button>
+<div id="start-screen" class="overlay">
+    <h1 style="color:#0ff">CYBER RUNNER</h1>
+    <button onclick="startGame()">ИГРАТЬ</button>
+</div>
 
-    <div id="start-screen" class="overlay">
-        <h1 style="color: #0ff; margin-bottom: 30px; font-size: 40px;">CYBER RUNNER</h1>
-        <button class="btn" onclick="startGame()">ИГРАТЬ</button>
-    </div>
-
-    <div id="ui">Счет: <span id="score">0</span></div>
-    
-    <div id="player">
-        <div class="p-head"></div>
-        <div class="p-body"></div>
-        <div class="p-leg l"></div>
-        <div class="p-leg r"></div>
-    </div>
-
-    <div id="death-screen" class="overlay" style="display: none;">
-        <h2 style="color: #f0f; font-size: 30px;">КОНЕЦ ИГРЫ</h2>
-        <p id="stats" style="font-size: 24px; margin-bottom: 20px;"></p>
-        <button id="ad-btn" class="btn" onclick="showAd()">⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ</button>
-    </div>
+<div id="death-screen" class="overlay" style="display:none">
+    <h1 style="color:#f0f">КОНЕЦ ИГРЫ</h1>
+    <button id="ad-btn" onclick="showAd()" style="background:#f0f; color:#fff">⚡ ВОСКРЕСНУТЬ</button>
 </div>
 
 <script>
-    const player = document.getElementById('player');
-    const scoreText = document.getElementById('score');
-    const deathScreen = document.getElementById('death-screen');
-    const adBtn = document.getElementById('ad-btn');
-    const startScreen = document.getElementById('start-screen');
-    const bgMusic = document.getElementById('bg-music');
-    const catchSound = document.getElementById('catch-sound');
-
-    let score = 0, gameActive = false, speed = 5, isMuted = false;
-    let spawnInterval;
-
+    let score = 0;
+    let gameActive = false;
+    let speed = 6;
+    let crystals = [];
     const AdController = window.AdsGram.init({ blockId: "25872" });
 
-    function toggleSound() {
-        isMuted = !isMuted;
-        bgMusic.muted = isMuted;
-        catchSound.muted = isMuted;
-        document.getElementById('sound-btn').innerText = isMuted ? "🔇" : "🔊";
-    }
-
     function startGame() {
-        startScreen.style.display = 'none';
-        deathScreen.style.display = 'none';
-        player.style.display = 'block';
-        document.getElementById('ui').style.display = 'block';
-        
-        score = 0; speed = 5;
-        scoreText.innerText = '0';
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('death-screen').style.display = 'none';
+        score = 0;
+        speed = 6;
+        document.getElementById('ui').innerText = "Счет: 0";
         gameActive = true;
-
-        bgMusic.play().catch(() => {});
-        startSpawning();
+        
+        // Очистка старых кристаллов если были
+        document.querySelectorAll('.crystal').forEach(c => c.remove());
+        
+        mainLoop();
     }
 
-    function startSpawning() {
-        if(spawnInterval) clearInterval(spawnInterval);
-        spawnInterval = setInterval(() => {
-            if(gameActive) createCrystal();
-        }, 1200);
-    }
-
-    document.addEventListener('touchmove', (e) => {
+    // Управление тапом и движением
+    function movePlayer(e) {
         if (!gameActive) return;
-        let x = e.touches[0].clientX - 20;
+        let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        let x = clientX - 20;
         x = Math.max(0, Math.min(x, window.innerWidth - 40));
-        player.style.left = x + 'px';
-    });
+        document.getElementById('player').style.left = x + 'px';
+    }
+    document.addEventListener('touchstart', movePlayer);
+    document.addEventListener('touchmove', movePlayer);
 
     function createCrystal() {
+        if (!gameActive) return;
         const c = document.createElement('div');
         c.className = 'crystal';
         c.style.left = Math.random() * (window.innerWidth - 30) + 'px';
         c.style.top = '-40px';
-        document.getElementById('game-container').appendChild(c);
-
+        document.body.appendChild(c);
+        
         let top = -40;
-        function fall() {
-            if (!gameActive) { c.remove(); return; }
+        const fall = setInterval(() => {
+            if (!gameActive) { clearInterval(fall); c.remove(); return; }
             top += speed;
             c.style.top = top + 'px';
 
-            let pR = player.getBoundingClientRect();
-            let cR = c.getBoundingClientRect();
+            let p = document.getElementById('player').getBoundingClientRect();
+            let cr = c.getBoundingClientRect();
 
-            if (cR.bottom > pR.top && cR.left < pR.right && cR.right > pR.left && cR.top < pR.bottom) {
-                score++; 
-                scoreText.innerText = score; 
-                c.remove(); 
-                catchSound.currentTime = 0; catchSound.play();
-                if (score % 5 === 0) speed += 0.6;
-                return;
+            // Проверка столкновения
+            if (cr.bottom > p.top && cr.left < p.right && cr.right > p.left && cr.top < p.bottom) {
+                score++;
+                document.getElementById('ui').innerText = "Счет: " + score;
+                if (score % 5 === 0) speed += 0.5;
+                clearInterval(fall);
+                c.remove();
             }
 
-            if (top > window.innerHeight) { c.remove(); gameOver(); } 
-            else { requestAnimationFrame(fall); }
-        }
-        requestAnimationFrame(fall);
+            // Проигрыш если упал мимо
+            if (top > window.innerHeight) {
+                gameActive = false;
+                clearInterval(fall);
+                c.remove();
+                document.getElementById('death-screen').style.display = 'flex';
+            }
+        }, 20);
     }
 
-    function gameOver() {
-        gameActive = false;
-        clearInterval(spawnInterval);
-        document.getElementById('stats').innerText = "Твой счет: " + score;
-        deathScreen.style.display = 'flex';
-        adBtn.style.display = 'block';
+    function mainLoop() {
+        if (!gameActive) return;
+        createCrystal();
+        setTimeout(mainLoop, 1300);
     }
 
     function showAd() {
-        adBtn.innerText = "ЗАГРУЗКА...";
+        const btn = document.getElementById('ad-btn');
+        btn.innerText = "ЗАГРУЗКА...";
+        
         AdController.show().then(() => {
-            adBtn.innerText = "⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ";
+            btn.innerText = "⚡ ВОСКРЕСНУТЬ";
             startGame();
         }).catch(() => {
-            alert("Реклама подгружается, подожди 3 секунды");
-            adBtn.innerText = "⚡ ВОСКРЕСНУТЬ ЗА РЕКЛАМУ";
+            alert("Реклама не готова, подождите немного...");
+            btn.innerText = "⚡ ВОСКРЕСНУТЬ";
         });
     }
 </script>
