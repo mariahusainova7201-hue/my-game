@@ -3,142 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Cyber Hero: Evolution</title>
+    <title>Cyber Hero: Runner</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://sad.adsgram.ai/js/adsgram-ad-sdk.js"></script>
     <style>
-        body { margin: 0; background: #050510; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
-        #game-container { display: none; width: 100vw; height: 100vh; position: relative; }
-        
-        /* ГЕРОЙ */
-        #player { position: absolute; bottom: 80px; left: 50%; width: 60px; height: 80px; transform: translateX(-50%); font-size: 50px; display: flex; align-items: center; justify-content: center; z-index: 100; transition: left 0.1s ease-out; }
+        body { margin: 0; background: #050510; color: white; font-family: sans-serif; text-align: center; overflow: hidden; touch-action: none; user-select: none; }
+        #game-container { display: none; position: relative; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: space-around; padding: 20px; box-sizing: border-box; }
+        #score-container { margin-top: 10px; z-index: 50; }
+        #score { font-size: 45px; font-weight: bold; color: #00ffcc; text-shadow: 0 0 20px rgba(0,255,204,0.5); }
+        .bar-bg { width: 100%; height: 8px; background: #1a1a2e; border-radius: 4px; margin: 5px 0; overflow: hidden; }
+        #evo-fill { width: 0%; height: 100%; background: #00ffcc; transition: 0.5s; }
+
+        /* ЧЕЛОВЕЧЕК - теперь двигается */
+        #hero-container { 
+            position: absolute; bottom: 120px; left: 50%; 
+            width: 80px; height: 80px; transform: translateX(-50%);
+            display: flex; align-items: center; justify-content: center; 
+            z-index: 100; transition: left 0.1s ease-out;
+        }
+        #main-hero { font-size: 60px; filter: drop-shadow(0 0 15px #00ffcc); }
         
         /* КРИСТАЛЛЫ */
-        .crystal { position: absolute; width: 30px; height: 30px; background: #00ffcc; border-radius: 50%; box-shadow: 0 0 15px #00ffcc; z-index: 50; }
+        .crystal { position: absolute; width: 35px; height: 35px; background: #ff00ff; border-radius: 50%; box-shadow: 0 0 15px #ff00ff; z-index: 40; display: flex; align-items: center; justify-content: center; }
 
-        #ui-top { position: absolute; top: 20px; left: 20px; z-index: 200; }
-        #score { font-size: 35px; font-weight: bold; color: #00ffcc; }
-        
-        .shop-grid { position: absolute; bottom: 10px; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 10px; box-sizing: border-box; z-index: 200; }
-        .btn { background: rgba(255,255,255,0.1); border: 1px solid #00ffcc; color: white; padding: 10px; border-radius: 12px; font-size: 12px; }
-        .ad-btn { grid-column: span 2; background: linear-gradient(135deg, #7700ff, #ff00ff); border: none; font-weight: bold; }
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; z-index: 150; position: absolute; bottom: 10px; padding: 0 20px; box-sizing: border-box; }
+        .btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(0,255,204,0.3); color: white; padding: 12px; border-radius: 12px; font-size: 11px; }
+        .ad-btn { grid-column: span 2; background: linear-gradient(135deg, #7700ff, #ff00ff); border: none; font-weight: bold; height: 50px; font-size: 14px; }
 
-        .overlay { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .overlay { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
     </style>
 </head>
 <body>
 
     <div id="intro-screen" class="overlay">
         <h1 style="color:#00ffcc;">CYBER HERO</h1>
-        <p>Лови кристаллы и эволюционируй!</p>
-        <button class="btn ad-btn" style="width:200px" onclick="startGame()">НАЧАТЬ</button>
+        <p>Лови кристаллы пальцем!</p>
+        <button class="btn ad-btn" style="width:200px;" onclick="startGame()">НАЧАТЬ</button>
     </div>
 
     <div id="game-container">
-        <div id="ui-top">
-            <div id="era-label" style="color:#ff00ff; font-size:12px;">ЭРА: ЗАРОЖДЕНИЕ</div>
+        <div id="score-container">
+            <div id="era-label" style="font-size:12px; color:#ff00ff;">Эра: Зарождение</div>
             <div id="score">0</div>
+            <div class="bar-bg"><div id="evo-fill"></div></div>
         </div>
 
-        <div id="player">👶</div>
+        <div id="hero-container"><div id="main-hero">👶</div></div>
 
         <div class="shop-grid">
             <button class="btn" onclick="boostSpeed()">⚡ СКОРОСТЬ +</button>
-            <button id="ad-btn" class="btn ad-btn" onclick="showAd()">📺 ЗАРЯД ГЕРОЯ (+500 💰)</button>
+            <button id="ad-btn" class="btn ad-btn" onclick="showAd()">📺 ПОЛУЧИТЬ +500 (ВАШ ID: 25872)</button>
         </div>
     </div>
 
     <script>
-        let coins = 0;
-        let era = 1;
-        let gameActive = false;
-        let speed = 5;
+        let coins = 0; let era = 1; let gameActive = false; let fallSpeed = 6;
         const heroes = ["👶", "👦", "🦾", "🤖", "👑"];
-        const tg = window.Telegram.WebApp;
+        const eras = ["Зарождение", "Техно", "Киберпанк", "Сингулярность", "Божество"];
+        const targets = [500, 5000, 50000, 500000, 99999999];
+
+        // ВАЖНО: Твой ID рекламы здесь!
         const AdController = window.AdsGram.init({ blockId: "25872" });
 
         function startGame() {
             document.getElementById('intro-screen').style.display = 'none';
-            document.getElementById('game-container').style.display = 'block';
+            document.getElementById('game-container').style.display = 'flex';
             gameActive = true;
-            spawnCrystal();
+            spawn();
         }
 
-        // ДВИЖЕНИЕ: Герой следует за пальцем
+        // ДВИЖЕНИЕ ПАЛЬЦЕМ
         document.addEventListener('touchmove', (e) => {
             if (!gameActive) return;
-            let touchX = e.touches[0].clientX;
-            let player = document.getElementById('player');
-            let newX = touchX - 30;
-            newX = Math.max(0, Math.min(newX, window.innerWidth - 60));
-            player.style.left = newX + 'px';
+            let x = e.touches[0].clientX - 40;
+            x = Math.max(0, Math.min(x, window.innerWidth - 80));
+            document.getElementById('hero-container').style.left = x + 'px';
         });
 
-        function spawnCrystal() {
+        function spawn() {
             if (!gameActive) return;
             const c = document.createElement('div');
-            c.className = 'crystal';
-            c.innerText = "💎"; // Можно заменить на эмодзи для красоты
-            c.style.left = Math.random() * (window.innerWidth - 30) + 'px';
+            c.className = 'crystal'; c.innerText = "💎";
+            c.style.left = Math.random() * (window.innerWidth - 40) + 'px';
             c.style.top = '-40px';
             document.getElementById('game-container').appendChild(c);
 
             let top = -40;
             const fall = setInterval(() => {
                 if (!gameActive) { clearInterval(fall); c.remove(); return; }
-                top += speed;
+                top += fallSpeed;
                 c.style.top = top + 'px';
 
-                let pRect = document.getElementById('player').getBoundingClientRect();
-                let cRect = c.getBoundingClientRect();
+                let p = document.getElementById('hero-container').getBoundingClientRect();
+                let cr = c.getBoundingClientRect();
 
-                // ПРОВЕРКА: Поймал или нет
-                if (cRect.bottom > pRect.top && cRect.left < pRect.right && cRect.right > pRect.left && cRect.top < pRect.bottom) {
-                    coins += 10;
-                    updateUI();
-                    clearInterval(fall);
-                    c.remove();
+                if (cr.bottom > p.top && cr.left < p.right && cr.right > p.left && cr.top < p.bottom) {
+                    coins += 10; updateUI(); clearInterval(fall); c.remove();
                 }
-
-                // Проигрыш если упал (или просто удаляем)
-                if (top > window.innerHeight) {
-                    clearInterval(fall);
-                    c.remove();
-                }
+                if (top > window.innerHeight) { clearInterval(fall); c.remove(); }
             }, 20);
-
-            setTimeout(spawnCrystal, 1200);
+            setTimeout(spawn, 1200);
         }
 
         function updateUI() {
-            document.getElementById('score').innerText = coins;
-            if (coins > 500 && era < 2) { era = 2; updateHero(); }
-            if (coins > 2000 && era < 3) { era = 3; updateHero(); }
+            document.getElementById('score').innerText = Math.floor(coins);
+            document.getElementById('main-hero').innerText = heroes[era-1];
+            document.getElementById('era-label').innerText = "Эра: " + eras[era-1];
+            document.getElementById('evo-fill').style.width = Math.min((coins/targets[era-1]*100), 100) + '%';
+            if (coins >= targets[era-1] && era < 5) { era++; coins = 0; fallSpeed += 0.5; }
         }
 
-        function updateHero() {
-            document.getElementById('player').innerText = heroes[era-1];
-            tg.HapticFeedback.notificationOccurred('success');
-        }
-
-        function boostSpeed() {
-            if (coins >= 100) {
-                coins -= 100;
-                speed += 1;
-                updateUI();
-            }
-        }
+        function boostSpeed() { if(coins >= 100) { coins -= 100; fallSpeed += 1; updateUI(); } }
 
         function showAd() {
             const btn = document.getElementById('ad-btn');
             btn.innerText = "ЗАГРУЗКА...";
+            // Вызов рекламы с твоим ID
             AdController.show().then(() => {
-                coins += 500;
-                updateUI();
-                btn.innerText = "📺 ЗАРЯД ГЕРОЯ (+500 💰)";
+                coins += 500; updateUI();
+                btn.innerText = "📺 ПОЛУЧИТЬ +500 (ВАШ ID: 25872)";
             }).catch(() => {
-                tg.showAlert("Реклама не готова, попробуй через 5 сек.");
-                btn.innerText = "📺 ЗАРЯД ГЕРОЯ (+500 💰)";
+                alert("Реклама подгружается...");
+                btn.innerText = "📺 ПОЛУЧИТЬ +500 (ВАШ ID: 25872)";
             });
         }
     </script>
